@@ -15,6 +15,9 @@ import {
   Settings,
   Check,
 } from "lucide-react";
+import { collection, addDoc, getDocs, onSnapshot } from "firebase/firestore";
+import { db } from "./firebaseConfig";
+
 
 const AssessmentSystem = () => {
   const [currentUser, setCurrentUser] = useState("admin");
@@ -101,7 +104,8 @@ const AssessmentSystem = () => {
     },
   ];
 
-  const createAssessment = () => {
+  const createAssessment = async() => {
+    console.log("assessment clicked");
     const title = titleRef.current?.value;
     const description = descriptionRef.current?.value;
     const scheduledDate = dateRef.current?.value;
@@ -119,7 +123,10 @@ const AssessmentSystem = () => {
         status: "draft",
         questions: [],
       };
-      setAssessments([...assessments, assessment]);
+       // save to Firestore
+    const docRef = await addDoc(collection(db, "assessments"), assessment);
+    console.log("✅ Assessment added with ID:", docRef.id);
+      // setAssessments([...assessments, assessment]);
 
       // Clear form
       if (titleRef.current) titleRef.current.value = "";

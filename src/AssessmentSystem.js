@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef ,useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -16,44 +16,15 @@ import {
   Check,
 } from "lucide-react";
 
+import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc   } from "firebase/firestore";
+import { db } from "./firebaseConfig";
+
 const AssessmentSystem = () => {
   const [currentUser, setCurrentUser] = useState("admin");
-  const [assessments, setAssessments] = useState([
-    {
-      id: 1,
-      title: "JavaScript Fundamentals",
-      description: "Basic JavaScript concepts and syntax",
-      scheduledDate: "2025-08-20",
-      scheduledTime: "10:00",
-      duration: 60,
-      status: "scheduled",
-      questions: [
-        {
-          id: 1,
-          question: "Explain the difference between let and var in JavaScript",
-          answerTypes: ["text"],
-          answer: {},
-        },
-        {
-          id: 2,
-          question:
-            "Create a simple React component and record yourself explaining it",
-          answerTypes: ["text", "github", "audio"],
-          answer: {},
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "React Components",
-      description: "Understanding React functional and class components",
-      scheduledDate: "2025-08-22",
-      scheduledTime: "14:00",
-      duration: 45,
-      status: "draft",
-      questions: [],
-    },
-  ]);
+
+
+const [assessments, setAssessments] = useState([]); // start empty
+
 
   const [currentView, setCurrentView] = useState("dashboard");
   const [selectedAssessment, setSelectedAssessment] = useState(null);
@@ -65,10 +36,10 @@ const AssessmentSystem = () => {
   const dateRef = useRef();
   const timeRef = useRef();
   const durationRef = useRef();
-  const questionRef = useRef();
 
   // State for question form
-  const [selectedAnswerTypes, setSelectedAnswerTypes] = useState(["text"]);
+  const [selectedAnswerTypes, setSelectedAnswerTypes] =useState([]);
+const [questionText, setQuestionText] = useState("");
 
   const answerTypes = [
     {
@@ -100,8 +71,55 @@ const AssessmentSystem = () => {
       description: "Image file",
     },
   ];
+const fetchAssessments = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "assessments"));
+    const list = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
 
-  const createAssessment = () => {
+      return {
+        firebaseId: doc.id, // Firestore auto-generated ID
+        ...data,
+        // Convert questions map → array
+        questions: data.questions ? Object.values(data.questions) : [],
+      };
+    });
+
+    setAssessments(list);
+
+    // Build initial answers (optional)
+    const initialAnswers = {};
+
+    list.forEach((assessment) => {
+      if (Array.isArray(assessment.questions)) {
+        assessment.questions.forEach((q) => {
+          if (!initialAnswers[q.id]) initialAnswers[q.id] = {};
+
+          if (Array.isArray(q.answerTypes)) {
+            q.answerTypes.forEach((type) => {
+              initialAnswers[q.id][type] = q.response?.[type] || "";
+            });
+          } else if (q.answerTypes) {
+            initialAnswers[q.id][q.answerTypes] = q.response || "";
+          }
+        });
+      }
+    });
+
+    // setAnswers(initialAnswers);
+    console.log("Fetched assessments:", list);
+  } catch (error) {
+    console.error("Error fetching assessments:", error);
+    alert("Failed to fetch assessments. Check console for details.");
+  }
+};
+useEffect(() => {
+  fetchAssessments(); // fetch all assessments when component loads
+}, []);
+  const createAssessment = async() => {
+      console.log("create assessment clicked");
+
+      
     const title = titleRef.current?.value;
     const description = descriptionRef.current?.value;
     const scheduledDate = dateRef.current?.value;
@@ -119,8 +137,21 @@ const AssessmentSystem = () => {
         status: "draft",
         questions: [],
       };
-      setAssessments([...assessments, assessment]);
 
+
+      // setAssessments([...assessments, assessment]);
+      try {
+            const docRef = await addDoc(collection(db, "assessments"), assessment);
+            console.log("Assessment added with ID:", docRef.id);
+            alert("✅ Assessment saved successfully!"); // should now show
+            // setAssessments([...assessments, { ...assessment, firebaseId: docRef.id }]);
+            setCurrentView("dashboard");
+          } catch (error) {
+            console.error("Error adding assessment:", error);
+            alert("❌ Could not save assessment. Please try again.");
+          }
+
+          fetchAssessments();
       // Clear form
       if (titleRef.current) titleRef.current.value = "";
       if (descriptionRef.current) descriptionRef.current.value = "";
@@ -132,45 +163,69 @@ const AssessmentSystem = () => {
     }
   };
 
-  const deleteAssessment = (id) => {
-    setAssessments(assessments.filter((a) => a.id !== id));
+  const deleteAssessment = async(firebaseId) => {
+      console.log("Deleted assessment:", firebaseId);
+      try {
+      await deleteDoc(doc(db, "assessments", firebaseId));
+    setAssessments(prev => prev.filter(a => a.firebaseId !== firebaseId));
+    console.log("Deleted:", firebaseId);
+  } catch (error) {
+    console.error("Error deleting assessment:", error.message);
+  }
+
+    // setAssessments(assessments.filter((a) => a.id !== id));
+  };
+const addQuestion = async (assessmentId) => {
+  if (!questionText || selectedAnswerTypes.length === 0) return;
+
+  const newQuestionId = Date.now(); // unique id
+  const newQuestion = {
+    id: newQuestionId,
+    question: questionText,        // question text from state
+    answerTypes: selectedAnswerTypes,
+    answer: {},                     // empty answers initially
   };
 
-  const addQuestion = (assessmentId) => {
-    const question = questionRef.current?.value;
+  try {
+    // Find the Firestore doc using firebaseId
+    const assessment = assessments.find((a) => a.id === assessmentId);
+    if (!assessment) return;
 
-    if (question && selectedAnswerTypes.length > 0) {
-      const newQuestion = {
-        id: Date.now(),
-        question,
-        answerTypes: selectedAnswerTypes,
-        answer: {},
-      };
+    const docRef = doc(db, "assessments", assessment.firebaseId);
 
-      setAssessments((prev) =>
-        prev.map((a) =>
-          a.id === assessmentId
-            ? {
-                ...a,
-                questions: [...a.questions, newQuestion],
-              }
-            : a
-        )
-      );
+    // Merge new question into existing questions object
+    // Firestore expects an object, not array
+    const updatedQuestions = {
+      ...(assessment.questions || {}),  // convert undefined to empty object
+      [newQuestionId]: newQuestion,
+    };
 
-      // Update selectedAssessment as well
-      if (selectedAssessment && selectedAssessment.id === assessmentId) {
-        setSelectedAssessment((prev) => ({
-          ...prev,
-          questions: [...prev.questions, newQuestion],
-        }));
-      }
+    // Update Firestore
+    await updateDoc(docRef, { questions: updatedQuestions });
 
-      // Clear form
-      if (questionRef.current) questionRef.current.value = "";
-      setSelectedAnswerTypes(["text"]);
+    // Update local state
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.id === assessmentId ? { ...a, questions: updatedQuestions } : a
+      )
+    );
+
+    if (selectedAssessment && selectedAssessment.id === assessmentId) {
+      setSelectedAssessment((prev) => ({
+        ...prev,
+        questions: updatedQuestions,
+      }));
     }
-  };
+
+    // Clear form
+    setQuestionText("");
+    setSelectedAnswerTypes(["text"]);
+    alert("✅ Question added successfully!");
+  } catch (error) {
+    console.error("Error adding question:", error);
+    alert("❌ Could not add question. Check console.");
+  }
+};
 
   const removeQuestion = (assessmentId, questionId) => {
     setAssessments((prev) =>
@@ -320,7 +375,7 @@ const AssessmentSystem = () => {
                   {assessment.status === "draft" ? "Publish" : "Unpublish"}
                 </button>
                 <button
-                  onClick={() => deleteAssessment(assessment.id)}
+                  onClick={() => deleteAssessment(assessment.firebaseId)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 size={20} />
@@ -580,29 +635,37 @@ const AssessmentSystem = () => {
     );
   };
 
-  const ManageAssessment = () => {
-    if (!selectedAssessment) return null;
+ const ManageAssessment = () => {
+  if (!selectedAssessment) return null;
 
-    return (
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Manage Assessment
-          </h1>
-          <h2 className="text-xl text-gray-600">{selectedAssessment.title}</h2>
-        </div>
+  // Convert questions object to array safely
+  
+   const questionsArray = selectedAssessment.questions
+  ? Object.values(selectedAssessment.questions)
+  : [];
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border">
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Questions
-                </h3>
-              </div>
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Manage Assessment
+        </h1>
+        <h2 className="text-xl text-gray-600">{selectedAssessment.title}</h2>
+      </div>
 
-              <div className="p-6 space-y-6">
-                {selectedAssessment.questions.map((question, index) => (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Questions List */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-sm border">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Questions
+              </h3>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {questionsArray.length > 0 ? (
+                questionsArray.map((question, index) => (
                   <div
                     key={question.id}
                     className="bg-gray-50 border border-gray-200 rounded-xl p-6"
@@ -637,184 +700,179 @@ const AssessmentSystem = () => {
                         Answer Types Required:
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {question.answerTypes.map((type) => {
-                          const answerType = answerTypes.find(
-                            (t) => t.value === type
-                          );
-                          const Icon = answerType?.icon || Type;
-                          return (
-                            <div
-                              key={type}
-                              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
-                            >
-                              <Icon size={16} />
-                              {answerType?.label}
-                            </div>
-                          );
-                        })}
+                        {(question.answerTypes || [])
+                          .filter(Boolean) // remove empty strings
+                          .map((type) => {
+                            const answerType = answerTypes.find(
+                              (t) => t.value === type
+                            );
+                            const Icon = answerType?.icon || Type;
+                            return (
+                              <div
+                                key={type}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                              >
+                                <Icon size={16} />
+                                {answerType?.label || type}
+                              </div>
+                            );
+                          })}
                       </div>
                     </div>
                   </div>
-                ))}
-
-                {selectedAssessment.questions.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <BookOpen
-                      className="mx-auto mb-4 text-gray-400"
-                      size={48}
-                    />
-                    <h3 className="text-lg font-medium mb-2">
-                      No questions added yet
-                    </h3>
-                    <p>Use the form on the right to add your first question.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Add Question
-              </h3>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Question Text
-                  </label>
-                  <textarea
-                    ref={questionRef}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={4}
-                    placeholder="Enter your question here..."
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <BookOpen
+                    className="mx-auto mb-4 text-gray-400"
+                    size={48}
                   />
+                  <h3 className="text-lg font-medium mb-2">
+                    No questions added yet
+                  </h3>
+                  <p>Use the form on the right to add your first question.</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Answer Types Required
-                  </label>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Select one or more answer types for this question
-                  </p>
-
-                  <div className="space-y-3">
-                    {answerTypes.map((type) => {
-                      const Icon = type.icon;
-                      const isSelected = selectedAnswerTypes.includes(
-                        type.value
-                      );
-
-                      return (
-                        <div
-                          key={type.value}
-                          onClick={() => toggleAnswerType(type.value)}
-                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                            isSelected
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`p-2 rounded-lg ${
-                                  isSelected
-                                    ? "bg-blue-100 text-blue-600"
-                                    : "bg-gray-100 text-gray-600"
-                                }`}
-                              >
-                                <Icon size={18} />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">
-                                  {type.label}
-                                </h4>
-                                <p className="text-sm text-gray-500">
-                                  {type.description}
-                                </p>
-                              </div>
-                            </div>
-                            <div
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                isSelected
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              {isSelected && (
-                                <Check size={14} className="text-white" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => addQuestion(selectedAssessment.id)}
-                  disabled={selectedAnswerTypes.length === 0}
-                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-                >
-                  <Plus size={18} />
-                  Add Question
-                </button>
-              </div>
+              )}
             </div>
-
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Assessment Info
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedAssessment.status === "scheduled"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {selectedAssessment.status}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Questions:</span>
-                  <span className="font-medium">
-                    {selectedAssessment.questions.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Duration:</span>
-                  <span className="font-medium">
-                    {selectedAssessment.duration} min
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Scheduled:</span>
-                  <span className="font-medium">
-                    {selectedAssessment.scheduledDate}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setCurrentView("dashboard")}
-              className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Back to Dashboard
-            </button>
           </div>
         </div>
+
+        {/* Add Question Form */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">
+              Add Question
+            </h3>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Question Text
+                </label>
+                <textarea
+                    
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={4}
+                  placeholder="Enter your question here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Answer Types Required
+                </label>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select one or more answer types for this question
+                </p>
+
+                <div className="space-y-3">
+                  {answerTypes.map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = selectedAnswerTypes.includes(type.value);
+
+                    return (
+                      <div
+                        key={type.value}
+                        onClick={() => toggleAnswerType(type.value)}
+                        className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`p-2 rounded-lg ${
+                                isSelected
+                                  ? "bg-blue-100 text-blue-600"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              <Icon size={18} />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">
+                                {type.label}
+                              </h4>
+                              <p className="text-sm text-gray-500">
+                                {type.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check size={14} className="text-white" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={() => addQuestion(selectedAssessment.id)}
+                disabled={selectedAnswerTypes.length === 0}
+                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              >
+                <Plus size={18} />
+                Add Question
+              </button>
+            </div>
+          </div>
+
+          {/* Assessment Info */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Assessment Info
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    selectedAssessment.status === "scheduled"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {selectedAssessment.status}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Questions:</span>
+                <span className="font-medium">{questionsArray.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Duration:</span>
+                <span className="font-medium">{selectedAssessment.duration} min</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Scheduled:</span>
+                <span className="font-medium">{selectedAssessment.scheduledDate}</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setCurrentView("dashboard")}
+            className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Back to Dashboard
+          </button>
+        </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   const StudentDashboard = () => {
     const availableAssessments = assessments.filter(
