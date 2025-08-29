@@ -248,14 +248,36 @@ const addQuestion = async (assessmentId) => {
     }
   };
 
-  const toggleAssessmentStatus = (id) => {
+  const toggleAssessmentStatus = async(id) => {
+    try {
+    // Find the assessment in state
+    const assessment = assessments.find((a) => a.id === id);
+    if (!assessment) return;
+
+    // Toggle status
+    const newStatus = assessment.status === "draft" ? "scheduled" : "draft";
+
+    // Update Firestore
+    const docRef = doc(db, "assessments", assessment.firebaseId);
+    await updateDoc(docRef, { status: newStatus });
+
+    // Update local state
     setAssessments(
       assessments.map((a) =>
-        a.id === id
-          ? { ...a, status: a.status === "draft" ? "scheduled" : "draft" }
-          : a
+        a.id === id ? { ...a, status: newStatus } : a
       )
     );
+
+    // Optional: update selectedAssessment if it's the same one
+    if (selectedAssessment && selectedAssessment.id === id) {
+      setSelectedAssessment({ ...selectedAssessment, status: newStatus });
+    }
+
+    console.log(`Assessment ${id} status updated to ${newStatus} in Firestore.`);
+  } catch (error) {
+    console.error("Error updating assessment status:", error);
+    alert("Failed to update assessment status. Check console.");
+  }
   };
 
   const toggleAnswerType = (type) => {
