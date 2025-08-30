@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Management System - Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        /* Typeform Styles */
+        .typeform-container {
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 500px;
+            position: relative;
+        }
+
+        .typeform-progress {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .typeform-progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .typeform-step {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .typeform-step.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .question-subtitle {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #f9f9f9;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #667eea;
+            outline: none;
+            background: white;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .role-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .role-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .role-card:hover, .role-card.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .role-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .otp-container {
+            text-align: center;
+        }
+
+        .otp-input {
+            font-size: 2em;
+            text-align: center;
+            letter-spacing: 10px;
+            font-family: monospace;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .otp-timer {
+            font-size: 1.2em;
+            color: #dc3545;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .otp-demo {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .skills-container, .interests-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .skill-tag, .interest-tag {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .skill-tag.selected, .interest-tag.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .education-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+
+        .step-indicator {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .login-section {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .nav-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .question-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .question-card:hover {
+            border-color: #667eea;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .auth-toggle button {
+            background: none;
+            border: none;
+            color: #667eea;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* Assessment Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 95%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .assessment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 2px solid #f0f0f0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .assessment-info h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        .assessment-meta {
+            font-size: 14px;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        .assessment-progress {
+            height: 6px;
+            background: #e0e0e0;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .question-container {
+            padding: 30px;
+            min-height: 400px;
+        }
+
+        .question-content {
+            display: none;
+        }
+
+        .question-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .question-type {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .answer-options {
+            margin: 20px 0;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .option input[type="radio"] {
+            margin-right: 12px;
+            transform: scale(1.2);
+        }
+
+        .code-editor {
+            background: #f8f8f8;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .code-editor:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            background: #e3f2fd;
+            border-style: solid;
+        }
+
+        .file-upload-area.dragover {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+
+        .assessment-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-top: 2px solid #f0f0f0;
+            background: #f9f9f9;
+        }
+
+        .question-indicators {
+            display: flex;
+            gap: 8px;
+        }
+
+        .question-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .question-dot.answered {
+            background: #28a745;
+        }
+
+        .question-dot.current {
+            background: #667eea;
+            transform: scale(1.3);
+        }
+
+        .question-dot.skipped {
+            background: #ffc107;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .results-summary {
+            padding: 30px;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .results-actions {
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 2px solid #f0f0f0;
+            background: #f9f9f9;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 98%;
+                height: 95vh;
+            }
+            
+            .assessment-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .question-container {
+                padding: 20px;
+            }
+            
+            .assessment-navigation {
+                padding: 15px 20px;
+            }
+            
+            .question-indicators {
+                order: -1;
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .role-selection {
+                grid-template-columns: 1fr;
+            }
+            
+            .education-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .typeform-container {
+                padding: 20px;
+            }
+
+            .question-title {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="loginSection" class="card">
+            <div class="header">
+                <h1>Assessment Management System</h1>
+                <p>Comprehensive platform for creating and managing assessments</p>
+            </div>
+            
+            <!-- Traditional Login (for Admin) -->
+            <div id="traditionalLogin" class="login-section">
+                <div class="form-group">
+                    <label for="userRole">Select Role:</label>
+                    <select id="userRole">
+                        <option value="">Choose your role</option>
+                        <option value="admin">Administrator</option>
+                        <option value="student">Student (Traditional Login)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter your username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+                
+                <button class="btn" onclick="login()" style="width: 100%;">Login</button>
+                
+                <div class="auth-toggle">
+                    <p>New Student? <button onclick="showStudentRegistration()">Register with Mobile OTP</button></p>
+                </div>
+            </div>
+
+            <!-- Typeform Student Registration -->
+            <div id="studentRegistration" class="typeform-container" style="display: none;">
+                <div class="step-indicator">
+                    <span id="stepIndicator">Step 1 of 10</span>
+                </div>
+                
+                <div class="typeform-progress">
+                    <div class="typeform-progress-bar" id="progressBar" style="width: 10%;"></div>
+                </div>
+
+                <!-- Step 1: First Name -->
+                <div class="typeform-step active" id="step1">
+                    <h2 class="question-title">👋 Welcome! Let's start with your first name</h2>
+                    <p class="question-subtitle">What should we call you?</p>
+                    <div class="form-group">
+                        <input type="text" id="firstName" placeholder="Enter your first name" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                    </div>
+                </div>
+
+                <!-- Step 2: Last Name -->
+                <div class="typeform-step" id="step2">
+                    <h2 class="question-title">Great, <span id="firstNameDisplay"></span>! 📝</h2>
+                    <p class="question-subtitle">What's your last name?</p>
+                    <div class="form-group">
+                        <input type="text" id="lastName" placeholder="Enter your last name" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                    </div>
+                </div>
+
+                <!-- Step 3: Email -->
+                <div class="typeform-step" id="step3">
+                    <h2 class="question-title">📧 What's your email address?</h2>
+                    <p class="question-subtitle">We'll use this to send you important updates</p>
+                    <div class="form-group">
+                        <input type="email" id="email" placeholder="name@example.com" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                    </div>
+                </div>
+
+                <!-- Step 4: Mobile Number -->
+                <div class="typeform-step" id="step4">
+                    <h2 class="question-title">📱 Mobile verification required</h2>
+                    <p class="question-subtitle">Enter your mobile number to receive OTP</p>
+                    <div class="form-group">
+                        <input type="tel" id="mobile" placeholder="+1 (555) 123-4567" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                    </div>
+                </div>
+
+                <!-- Step 5: OTP Verification -->
+                <div class="typeform-step" id="step5">
+                    <div class="otp-container">
+                        <h2 class="question-title">🔐 Enter verification code</h2>
+                        <p class="question-subtitle">We sent a 6-digit code to <span id="mobileDisplay"></span></p>
+                        
+                        <div class="otp-demo" id="otpDemo">
+                            <strong>Demo OTP: <span id="demoOtpDisplay"></span></strong>
+                            <p style="font-size: 12px; margin-top: 5px;">In production, this would be sent via SMS</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="text" id="otp" class="otp-input" placeholder="000000" 
+                                   maxlength="6" onkeyup="if(event.key === 'Enter') nextStep()">
+                        </div>
+                        
+                        <div class="otp-timer" id="otpTimer"></div>
+                        <button class="btn btn-secondary" id="resendBtn" onclick="resendOtp()" disabled>
+                            Resend OTP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 6: Education Details -->
+                <div class="typeform-step" id="step6">
+                    <h2 class="question-title">🎓 Tell us about your education</h2>
+                    <p class="question-subtitle">Your educational background helps us personalize your experience</p>
+                    
+                    <div class="education-grid">
+                        <div class="form-group">
+                            <label for="degree">Degree/Qualification</label>
+                            <select id="degree">
+                                <option value="">Select degree</option>
+                                <option value="high-school">High School</option>
+                                <option value="associate">Associate Degree</option>
+                                <option value="bachelor">Bachelor's Degree</option>
+                                <option value="master">Master's Degree</option>
+                                <option value="phd">PhD</option>
+                                <option value="diploma">Diploma</option>
+                                <option value="certificate">Certificate</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="institution">Institution/School</label>
+                            <input type="text" id="institution" placeholder="Your school/university">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="fieldOfStudy">Field of Study</label>
+                            <input type="text" id="fieldOfStudy" placeholder="Computer Science, Engineering, etc.">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="graduationYear">Year of Completion/Expected</label>
+                            <input type="number" id="graduationYear" placeholder="2024" min="2000" max="2030">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 7: Skills -->
+                <div class="typeform-step" id="step7">
+                    <h2 class="question-title">💪 What are your key skills?</h2>
+                    <p class="question-subtitle">Select all that apply (you can choose multiple)</p>
+                    
+                    <div class="skills-container">
+                        <div class="skill-tag" onclick="toggleSkill('javascript')">JavaScript</div>
+                        <div class="skill-tag" onclick="toggleSkill('python')">Python</div>
+                        <div class="skill-tag" onclick="toggleSkill('java')">Java</div>
+                        <div class="skill-tag" onclick="toggleSkill('cpp')">C++</div>
+                        <div class="skill-tag" onclick="toggleSkill('html-css')">HTML/CSS</div>
+                        <div class="skill-tag" onclick="toggleSkill('react')">React</div>
+                        <div class="skill-tag" onclick="toggleSkill('nodejs')">Node.js</div>
+                        <div class="skill-tag" onclick="toggleSkill('database')">Database Management</div>
+                        <div class="skill-tag" onclick="toggleSkill('ml')">Machine Learning</div>
+                        <div class="skill-tag" onclick="toggleSkill('data-analysis')">Data Analysis</div>
+                        <div class="skill-tag" onclick="toggleSkill('ui-ux')">UI/UX Design</div>
+                        <div class="skill-tag" onclick="toggleSkill('project-management')">Project Management</div>
+                        <div class="skill-tag" onclick="toggleSkill('writing')">Technical Writing</div>
+                        <div class="skill-tag" onclick="toggleSkill('communication')">Communication</div>
+                        <div class="skill-tag" onclick="toggleSkill('problem-solving')">Problem Solving</div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="customSkills">Other skills (comma separated)</label>
+                        <input type="text" id="customSkills" placeholder="Photography, Digital Marketing, etc.">
+                    </div>
+                </div>
+
+                <!-- Step 8: Areas of Interest -->
+                <div class="typeform-step" id="step8">
+                    <h2 class="question-title">🎯 What are your areas of interest?</h2>
+                    <p class="question-subtitle">This helps us recommend relevant assessments</p>
+                    
+                    <div class="interests-container">
+                        <div class="interest-tag" onclick="toggleInterest('web-development')">Web Development</div>
+                        <div class="interest-tag" onclick="toggleInterest('mobile-development')">Mobile Development</div>
+                        <div class="interest-tag" onclick="toggleInterest('data-science')">Data Science</div>
+                        <div class="interest-tag" onclick="toggleInterest('machine-learning')">Machine Learning</div>
+                        <div class="interest-tag" onclick="toggleInterest('cybersecurity')">Cybersecurity</div>
+                        <div class="interest-tag" onclick="toggleInterest('cloud-computing')">Cloud Computing</div>
+                        <div class="interest-tag" onclick="toggleInterest('devops')">DevOps</div>
+                        <div class="interest-tag" onclick="toggleInterest('game-development')">Game Development</div>
+                        <div class="interest-tag" onclick="toggleInterest('blockchain')">Blockchain</div>
+                        <div class="interest-tag" onclick="toggleInterest('iot')">Internet of Things</div>
+                        <div class="interest-tag" onclick="toggleInterest('ar-vr')">AR/VR</div>
+                        <div class="interest-tag" onclick="toggleInterest('robotics')">Robotics</div>
+                        <div class="interest-tag" onclick="toggleInterest('digital-marketing')">Digital Marketing</div>
+                        <div class="interest-tag" onclick="toggleInterest('business-analysis')">Business Analysis</div>
+                        <div class="interest-tag" onclick="toggleInterest('entrepreneurship')">Entrepreneurship</div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="customInterests">Other interests (comma separated)</label>
+                        <input type="text" id="customInterests" placeholder="Photography, Music Production, etc.">
+                    </div>
+                </div>
+
+                <!-- Step 9: Password -->
+                <div class="typeform-step" id="step9">
+                    <h2 class="question-title">🔒 Create a secure password</h2>
+                    <p class="question-subtitle">This will be used to access your account</p>
+                    <div class="form-group">
+                        <input type="password" id="newPassword" placeholder="Create a strong password" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            Password should be at least 8 characters long
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="confirmPassword" placeholder="Confirm your password" 
+                               onkeyup="if(event.key === 'Enter') nextStep()">
+                    </div>
+                </div>
+
+                <!-- Step 10: Review & Complete -->
+                <div class="typeform-step" id="step10">
+                    <h2 class="question-title">🎉 Almost there!</h2>
+                    <p class="question-subtitle">Review your information and complete registration</p>
+                    
+                    <div id="reviewInfo" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <!-- Review information will be populated here -->
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button class="btn" onclick="completeRegistration()" style="font-size: 18px; padding: 20px 40px;">
+                            Complete Registration ✨
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="navigation-buttons">
+                    <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" style="display: none;">
+                        ← Previous
+                    </button>
+                    <button class="btn" id="nextBtn" onclick="nextStep()">
+                        Continue →
+                    </button>
+                </div>
+
+                <div class="auth-toggle">
+                    <p>Already have an account? <button onclick="showTraditionalLogin()">Sign In</button></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Dashboard -->
+        <div id="studentDashboard" class="dashboard">
+            <div class="card">
+                <div class="header">
+                    <h1>Student Dashboard</h1>
+                    <p>Welcome, <span id="studentName"></span>!</p>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                </div>
+
+                <div class="nav-tabs">
+                    <button class="nav-tab active" onclick="showStudentTab('profile')">My Profile</button>
+                    <button class="nav-tab" onclick="showStudentTab('available-assessments')">Available Assessments</button>
+                    <button class="nav-tab" onclick="showStudentTab('my-submissions')">My Submissions</button>
+                    <button class="nav-tab" onclick="showStudentTab('results')">Results</button>
+                </div>
+
+                <!-- Profile Tab -->
+                <div id="profile" class="tab-content active">
+                    <h3>My Profile</h3>
+                    <div id="studentProfile"></div>
+                </div>
+
+                <!-- Available Assessments Tab -->
+                <div id="available-assessments" class="tab-content">
+                    <h3>Available Assessments</h3>
+                    <div id="studentAssessmentsList">
+                        <div class="question-card">
+                            <h4>JavaScript Fundamentals Assessment</h4>
+                            <p>Test your knowledge of JavaScript basics including variables, functions, and DOM manipulation.</p>
+                            <div style="margin-top: 15px;">
+                                <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">Active</span>
+                                <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                                    <strong>Duration:</strong> 60 minutes | <strong>Questions:</strong> 8 | <strong>Max Score:</strong> 100 points
+                                </div>
+                                <button class="btn" style="margin-left: 10px;" onclick="startAssessment('js-fundamentals')">Take Assessment</button>
+                            </div>
+                        </div>
+                        
+                        <div class="question-card">
+                            <h4>Web Development Practical Assessment</h4>
+                            <p>Hands-on assessment covering HTML, CSS, and JavaScript with practical coding challenges.</p>
+                            <div style="margin-top: 15px;">
+                                <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">Active</span>
+                                <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                                    <strong>Duration:</strong> 90 minutes | <strong>Questions:</strong> 6 | <strong>Max Score:</strong> 150 points
+                                </div>
+                                <button class="btn" style="margin-left: 10px;" onclick="startAssessment('web-dev-practical')">Take Assessment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Submissions Tab -->
+                <div id="my-submissions" class="tab-content">
+                    <h3>My Submissions</h3>
+                    <div id="mySubmissionsList">
+                        <p>No submissions yet.</p>
+                    </div>
+                </div>
+
+                <!-- Results Tab -->
+                <div id="results" class="tab-content">
+                    <h3>My Results</h3>
+                    <div id="myResultsList">
+                        <p>No results available yet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard (Simplified) -->
+        <div id="adminDashboard" class="dashboard">
+            <div class="card">
+                <div class="header">
+                    <h1>Administrator Dashboard</h1>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                </div>
+                <div class="question-card">
+                    <h3>Assessment Management</h3>
+                    <p>Create and manage assessments, view submissions, and grade student work.</p>
+                    <div style="margin-top: 15px;">
+                        <button class="btn">Create New Assessment</button>
+                        <button class="btn btn-secondary">View All Assessments</button>
+                        <button class="btn btn-secondary">Student Registrations</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment Taking Modal -->
+        <div id="assessmentModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="assessment-header">
+                    <div class="assessment-info">
+                        <h2 id="assessmentTitle">JavaScript Fundamentals Assessment</h2>
+                        <div class="assessment-meta">
+                            <span>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">8</span></span>
+                            <span>•</span>
+                            <span>Time Remaining: <span id="timeRemaining">60:00</span></span>
+                            <span>•</span>
+                            <span>Score: <span id="currentScore">0</span> / <span id="maxScore">100</span></span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="exitAssessment()">Exit Assessment</button>
+                </div>
+
+                <div class="assessment-progress">
+                    <div class="progress-bar" id="assessmentProgress"></div>
+                </div>
+
+                <div class="question-container" id="questionContainer">
+                    <!-- Questions will be loaded here -->
+                </div>
+
+                <div class="assessment-navigation">
+                    <button class="btn btn-secondary" id="prevQuestionBtn" onclick="previousQuestion()" disabled>Previous</button>
+                    <div class="question-indicators" id="questionIndicators">
+                        <!-- Question dots will be generated here -->
+                    </div>
+                    <button class="btn" id="nextQuestionBtn" onclick="nextQuestion()">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assessment Results Modal -->
+        <div id="resultsModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="results-header">
+                    <h2>🎉 Assessment Completed!</h2>
+                    <button class="btn btn-secondary" onclick="closeResults()">×</button>
+                </div>
+                
+                <div class="results-summary" id="resultsSummary">
+                    <!-- Results will be populated here -->
+                </div>
+                
+                <div class="results-actions">
+                    <button class="btn" onclick="viewDetailedResults()">View Detailed Results</button>
+                    <button class="btn btn-secondary" onclick="closeResults()">Back to Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentStep = 1;
+        let maxSteps = 10;
+        let otpTimer = null;
+        let generatedOtp = '';
+        let studentData = {};
+
+        // Arrays to store selected skills and interests
+        let selectedSkills = [];
+        let selectedInterests = [];
+
+        // Student registration data
+        let registrationData = {};
+
+        // Assessment variables
+        let currentAssessment = null;
+        let currentQuestionIndex = 0;
+        let assessmentTimer = null;
+        let assessmentStartTime = null;
+        let studentAnswers = {};
+        let assessmentTimeLimit = 0;
+
+        // Sample assessments data
+        const assessments = {
+            'js-fundamentals': {
+                title: 'JavaScript Fundamentals Assessment',
+                timeLimit: 60, // minutes
+                totalScore: 100,
+                questions: [
+                    {
+                        id: 'q1',
+                        type: 'multiple-choice',
+                        text: 'What is the correct way to declare a variable in JavaScript?',
+                        options: [
+                            'var myVariable = 5;',
+                            'variable myVariable = 5;',
+                            'declare myVariable = 5;',
+                            'v myVariable = 5;'
+                        ],
+                        correctAnswer: 0,
+                        points: 10
+                    },
+                    {
+                        id: 'q2',
+                        type: 'multiple-choice',
+                        text: 'Which of the following is NOT a JavaScript data type?',
+                        options: [
+                            'String',
+                            'Boolean',
+                            'Float',
+                            'Number'
+                        ],
+                        correctAnswer: 2,
+                        points: 10
+                    },
+                    {
+                        id: 'q3',
+                        type: 'code',
+                        text: 'Write a JavaScript function called "greetUser" that takes a name parameter and returns "Hello, [name]!"',
+                        placeholder: 'function greetUser(name) {\n    // Your code here\n}',
+                        points: 20,
+                        sampleSolution: 'function greetUser(name) {\n    return "Hello, " + name + "!";\n}'
+                    },
+                    {
+                        id: 'q4',
+                        type: 'multiple-choice',
+                        text: 'What will be the output of: console.log(typeof null)?',
+                        options: [
+                            '"null"',
+                            '"undefined"',
+                            '"object"',
+                            '"boolean"'
+                        ],
+                        correctAnswer: 2,
+                        points: 15
+                    },
+                    {
+                        id: 'q5',
+                        type: 'text',
+                        text: 'Explain the difference between "==" and "===" operators in JavaScript. Provide an example.',
+                        points: 15,
+                        minLength: 100
+                    },
+                    {
+                        id: 'q6',
+                        type: 'multiple-choice',
+                        text: 'Which method is used to add an element to the end of an array?',
+                        options: [
+                            'append()',
+                            'push()',
+                            'add()',
+                            'insert()'
+                        ],
+                        correctAnswer: 1,
+                        points: 10
+                    },
+                    {
+                        id: 'q7',
+                        type: 'code',
+                        text: 'Create a function that takes an array of numbers and returns the sum of all elements.',
+                        placeholder: 'function sumArray(numbers) {\n    // Your code here\n}',
+                        points: 15,
+                        sampleSolution: 'function sumArray(numbers) {\n    return numbers.reduce((sum, num) => sum + num, 0);\n}'
+                    },
+                    {
+                        id: 'q8',
+                        type: 'file-upload',
+                        text: 'Upload a HTML file that demonstrates the use of JavaScript DOM manipulation. The file should include at least one button that changes text content when clicked.',
+                        acceptedTypes: '.html,.htm',
+                        points: 15
+                    }
+                ]
+            },
+            'web-dev-practical': {
+                title: 'Web Development Practical Assessment',
+                timeLimit: 90,
+                totalScore: 150,
+                questions: [
+                    {
+                        id: 'q1',
+                        type: 'multiple-choice',
+                        text: 'Which HTML element is used to define internal CSS?',
+                        options: [
+                            '<css>',
+                            '<style>',
+                            '<script>',
+                            '<link>'
+                        ],
+                        correctAnswer: 1,
+                        points: 15
+                    },
+                    {
+                        id: 'q2',
+                        type: 'code',
+                        text: 'Write CSS code to create a flexbox container with centered items both horizontally and vertically.',
+                        placeholder: '.container {\n    /* Your CSS here */\n}',
+                        points: 25,
+                        sampleSolution: '.container {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n}'
+                    },
+                    {
+                        id: 'q3',
+                        type: 'text',
+                        text: 'Describe the CSS Box Model and explain each component (content, padding, border, margin).',
+                        points: 20,
+                        minLength: 150
+                    },
+                    {
+                        id: 'q4',
+                        type: 'code',
+                        text: 'Create a responsive navigation bar using HTML and CSS that collapses on mobile devices.',
+                        placeholder: '<!-- HTML -->\n<nav>\n    <!-- Your HTML here -->\n</nav>\n\n/* CSS */\n.nav {\n    /* Your CSS here */\n}',
+                        points: 35
+                    },
+                    {
+                        id: 'q5',
+                        type: 'multiple-choice',
+                        text: 'Which CSS property is used to make elements responsive?',
+                        options: [
+                            'responsive',
+                            'media-query',
+                            'max-width',
+                            'flex-wrap'
+                        ],
+                        correctAnswer: 2,
+                        points: 15
+                    },
+                    {
+                        id: 'q6',
+                        type: 'file-upload',
+                        text: 'Upload a complete webpage (HTML, CSS, JS files in a ZIP) that demonstrates a working contact form with validation.',
+                        acceptedTypes: '.zip,.rar',
+                        points: 40
+                    }
+                ]
+            }
+        };
+
+        function showStudentRegistration() {
+            document.getElementById('traditionalLogin').style.display = 'none';
+            document.getElementById('studentRegistration').style.display = 'block';
+            updateProgress();
+        }
+
+        function showTraditionalLogin() {
+            document.getElementById('studentRegistration').style.display = 'none';
+            document.getElementById('traditionalLogin').style.display = 'block';
+        }
+
+        function nextStep() {
+            console.log(`Attempting to move from step ${currentStep}`);
+            
+            // Validation for each step
+            if (!validateCurrentStep()) {
+                return;
+            }
+
+            // Special handling for OTP step
+            if (currentStep === 4) {
+                sendOtp();
+                return;
+            }
+
+            // Move to next step
+            if (currentStep < maxSteps) {
+                // Hide current step
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                
+                // Show next step
+                currentStep++;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                // Update progress and navigation
+                updateProgress();
+                updateNavigation();
+                
+                // Special handling for specific steps
+                if (currentStep === 5) {
+                    document.getElementById('mobileDisplay').textContent = document.getElementById('mobile').value;
+                } else if (currentStep === 10) {
+                    populateReview();
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                // Hide current step
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                
+                // Show previous step
+                currentStep--;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                // Update progress and navigation
+                updateProgress();
+                updateNavigation();
+            }
+        }
+
+        function validateCurrentStep() {
+            switch(currentStep) {
+                case 1:
+                    const firstName = document.getElementById('firstName').value.trim();
+                    if (!firstName) {
+                        alert('Please enter your first name');
+                        return false;
+                    }
+                    registrationData.firstName = firstName;
+                    document.getElementById('firstNameDisplay').textContent = firstName;
+                    break;
+                    
+                case 2:
+                    const lastName = document.getElementById('lastName').value.trim();
+                    if (!lastName) {
+                        alert('Please enter your last name');
+                        return false;
+                    }
+                    registrationData.lastName = lastName;
+                    break;
+                    
+                case 3:
+                    const email = document.getElementById('email').value.trim();
+                    if (!email || !email.includes('@')) {
+                        alert('Please enter a valid email address');
+                        return false;
+                    }
+                    registrationData.email = email;
+                    break;
+                    
+                case 4:
+                    const mobile = document.getElementById('mobile').value.trim();
+                    if (!mobile) {
+                        alert('Please enter your mobile number');
+                        return false;
+                    }
+                    registrationData.mobile = mobile;
+                    break;
+                    
+                case 5:
+                    const otp = document.getElementById('otp').value.trim();
+                    if (!otp || otp.length !== 6) {
+                        alert('Please enter the 6-digit OTP');
+                        return false;
+                    }
+                    if (otp !== generatedOtp) {
+                        alert('Invalid OTP. Please check and try again.');
+                        return false;
+                    }
+                    break;
+                    
+                case 6:
+                    const degree = document.getElementById('degree').value;
+                    const institution = document.getElementById('institution').value.trim();
+                    if (!degree || !institution) {
+                        alert('Please fill in your education details');
+                        return false;
+                    }
+                    registrationData.education = {
+                        degree: degree,
+                        institution: institution,
+                        fieldOfStudy: document.getElementById('fieldOfStudy').value.trim(),
+                        graduationYear: document.getElementById('graduationYear').value
+                    };
+                    break;
+                    
+                case 7:
+                    if (selectedSkills.length === 0) {
+                        alert('Please select at least one skill');
+                        return false;
+                    }
+                    registrationData.skills = [...selectedSkills];
+                    const customSkills = document.getElementById('customSkills').value.trim();
+                    if (customSkills) {
+                        registrationData.skills = [...registrationData.skills, ...customSkills.split(',').map(s => s.trim())];
+                    }
+                    break;
+                    
+                case 8:
+                    if (selectedInterests.length === 0) {
+                        alert('Please select at least one area of interest');
+                        return false;
+                    }
+                    registrationData.interests = [...selectedInterests];
+                    const customInterests = document.getElementById('customInterests').value.trim();
+                    if (customInterests) {
+                        registrationData.interests = [...registrationData.interests, ...customInterests.split(',').map(s => s.trim())];
+                    }
+                    break;
+                    
+                case 9:
+                    const password = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    if (!password || password.length < 8) {
+                        alert('Password must be at least 8 characters long');
+                        return false;
+                    }
+                    if (password !== confirmPassword) {
+                        alert('Passwords do not match');
+                        return false;
+                    }
+                    registrationData.password = password;
+                    break;
+            }
+            return true;
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / maxSteps) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('stepIndicator').textContent = `Step ${currentStep} of ${maxSteps}`;
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Show/hide previous button
+            if (currentStep > 1) {
+                prevBtn.style.display = 'inline-block';
+            } else {
+                prevBtn.style.display = 'none';
+            }
+            
+            // Update next button text
+            if (currentStep === maxSteps) {
+                nextBtn.style.display = 'none';
+            } else if (currentStep === 4) {
+                nextBtn.textContent = 'Send OTP';
+            } else {
+                nextBtn.textContent = 'Continue →';
+                nextBtn.style.display = 'inline-block';
+            }
+        }
+
+        function sendOtp() {
+            const mobile = document.getElementById('mobile').value;
+            
+            // Generate random 6-digit OTP
+            generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // Show demo OTP
+            document.getElementById('demoOtpDisplay').textContent = generatedOtp;
+            
+            console.log(`Demo OTP for ${mobile}: ${generatedOtp}`);
+            alert(`Demo: OTP sent to ${mobile}\nOTP: ${generatedOtp}\n\n(In production, this would be sent via SMS)`);
+            
+            // Move to OTP verification step
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep++;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            updateProgress();
+            updateNavigation();
+            
+            // Start OTP timer
+            startOtpTimer();
+        }
+
+        function startOtpTimer() {
+            let timeLeft = 30;
+            const timerElement = document.getElementById('otpTimer');
+            const resendBtn = document.getElementById('resendBtn');
+            
+            resendBtn.disabled = true;
+            
+            otpTimer = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = `Resend OTP in ${timeLeft} seconds`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(otpTimer);
+                    timerElement.textContent = 'OTP expired. Click resend to get a new one.';
+                    resendBtn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        function resendOtp() {
+            clearInterval(otpTimer);
+            sendOtp();
+        }
+
+        function toggleSkill(skill) {
+            const element = event.target;
+            
+            if (selectedSkills.includes(skill)) {
+                selectedSkills = selectedSkills.filter(s => s !== skill);
+                element.classList.remove('selected');
+            } else {
+                selectedSkills.push(skill);
+                element.classList.add('selected');
+            }
+            
+            console.log('Selected skills:', selectedSkills);
+        }
+
+        function toggleInterest(interest) {
+            const element = event.target;
+            
+            if (selectedInterests.includes(interest)) {
+                selectedInterests = selectedInterests.filter(i => i !== interest);
+                element.classList.remove('selected');
+            } else {
+                selectedInterests.push(interest);
+                element.classList.add('selected');
+            }
+            
+            console.log('Selected interests:', selectedInterests);
+        }
+
+        function populateReview() {
+            const reviewDiv = document.getElementById('reviewInfo');
+            
+            reviewDiv.innerHTML = `
+                <h4>📝 Registration Summary</h4>
+                <p><strong>Name:</strong> ${registrationData.firstName} ${registrationData.lastName}</p>
+                <p><strong>Email:</strong> ${registrationData.email}</p>
+                <p><strong>Mobile:</strong> ${registrationData.mobile}</p>
+                <p><strong>Education:</strong> ${registrationData.education.degree} from ${registrationData.education.institution}</p>
+                <p><strong>Field of Study:</strong> ${registrationData.education.fieldOfStudy || 'Not specified'}</p>
+                <p><strong>Skills:</strong> ${registrationData.skills.join(', ')}</p>
+                <p><strong>Interests:</strong> ${registrationData.interests.join(', ')}</p>
+            `;
+        }
+
+        function completeRegistration() {
+            console.log('Completing registration with data:', registrationData);
+            
+            // Save student data
+            currentUser = {
+                username: registrationData.email,
+                role: 'student',
+                profile: registrationData
+            };
+            
+            // Hide login section and show student dashboard
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('studentDashboard').classList.add('active');
+            
+            // Update student name in dashboard
+            document.getElementById('studentName').textContent = `${registrationData.firstName} ${registrationData.lastName}`;
+            
+            // Populate profile tab
+            populateStudentProfile();
+            
+            alert(`🎉 Registration completed successfully!\n\nWelcome ${registrationData.firstName}! You can now access your student dashboard.`);
+        }
+
+        function populateStudentProfile() {
+            const profileDiv = document.getElementById('studentProfile');
+            
+            profileDiv.innerHTML = `
+                <div class="question-card">
+                    <h4>Personal Information</h4>
+                    <p><strong>Name:</strong> ${registrationData.firstName} ${registrationData.lastName}</p>
+                    <p><strong>Email:</strong> ${registrationData.email}</p>
+                    <p><strong>Mobile:</strong> ${registrationData.mobile}</p>
+                </div>
+                
+                <div class="question-card">
+                    <h4>Education</h4>
+                    <p><strong>Degree:</strong> ${registrationData.education.degree}</p>
+                    <p><strong>Institution:</strong> ${registrationData.education.institution}</p>
+                    <p><strong>Field of Study:</strong> ${registrationData.education.fieldOfStudy || 'Not specified'}</p>
+                    <p><strong>Graduation Year:</strong> ${registrationData.education.graduationYear || 'Not specified'}</p>
+                </div>
+                
+                <div class="question-card">
+                    <h4>Skills</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                        ${registrationData.skills.map(skill => 
+                            `<span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px;">${skill}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+                
+                <div class="question-card">
+                    <h4>Areas of Interest</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                        ${registrationData.interests.map(interest => 
+                            `<span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px;">${interest}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Traditional login function (for admin and existing students)
+        function login() {
+            const role = document.getElementById('userRole').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!role || !username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            currentUser = { username, role };
+            document.getElementById('loginSection').style.display = 'none';
+            
+            if (role === 'admin') {
+                document.getElementById('adminDashboard').classList.add('active');
+            } else {
+                document.getElementById('studentDashboard').classList.add('active');
+                document.getElementById('studentName').textContent = username;
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            registrationData = {};
+            selectedSkills = [];
+            selectedInterests = [];
+            currentStep = 1;
+            
+            // Reset forms
+            document.querySelectorAll('input, select, textarea').forEach(input => {
+                input.value = '';
+            });
+            
+            // Reset selections
+            document.querySelectorAll('.skill-tag, .interest-tag').forEach(tag => {
+                tag.classList.remove('selected');
+            });
+            
+            // Show login section
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminDashboard').classList.remove('active');
+            document.getElementById('studentDashboard').classList.remove('active');
+            
+            // Show traditional login by default
+            showTraditionalLogin();
+        }
+
+        function showStudentTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Enhanced Assessment Management System loaded');
+            updateProgress();
+            updateNavigation();
+        });
+    </script>
+</body>
+</html>

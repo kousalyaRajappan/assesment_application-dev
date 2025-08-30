@@ -1,14 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-function LoginForm({ onLogin }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin(username, password);
-  };
-
+function LoginForm() {
   return (
     <div style={{
       minHeight: '100vh',
@@ -17,70 +9,19 @@ function LoginForm({ onLogin }) {
       justifyContent: 'center',
       background: 'linear-gradient(135deg, #2563eb 0%, #38bdf8 100%)'
     }}>
-      <form
-        onSubmit={handleSubmit}
+      <iframe
+        src="/enhanced_assessment_system.html"
+        title="Enhanced Assessment System"
         style={{
-          background: '#fff',
-          padding: '32px 40px',
+          width: 1200,
+          height: 900,
+          border: 'none',
           borderRadius: 16,
-          boxShadow: '0 8px 32px rgba(37,99,235,0.15)',
-          minWidth: 320,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
+          boxShadow: '0 8px 32px rgba(37,99,235,0.15)'
         }}
-      >
-        <img src="https://img.icons8.com/fluency/96/000000/lock.png" alt="Login" style={{ marginBottom: 16 }} />
-        <h2 style={{ marginBottom: 24, color: '#2563eb', fontWeight: 700 }}>Assessment System Login</h2>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          style={{
-            width: '100%',
-            padding: 10,
-            marginBottom: 16,
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            fontSize: 16
-          }}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{
-            width: '100%',
-            padding: 10,
-            marginBottom: 24,
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            fontSize: 16
-          }}
-          required
-        />
-        <button
-          type="submit"
-          style={{
-            width: '100%',
-            padding: 12,
-            background: 'linear-gradient(90deg, #2563eb 60%, #38bdf8 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(37,99,235,0.10)'
-          }}
-        >
-          Login
-        </button>
-      </form>
+      />
     </div>
   );
 }
+
 export default LoginForm;
