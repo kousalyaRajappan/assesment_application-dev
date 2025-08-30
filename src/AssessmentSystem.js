@@ -20,12 +20,14 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, arrayUnion } fr
 
 
 import { db } from "./firebaseConfig";
+import { useNavigate } from "react-router-dom";
 
 const AssessmentSystem = () => {
   // const [currentUser, setCurrentUser] = useState("admin");
   const [currentStudent, setCurrentStudent] = useState(null); // store full user object
   const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
 
+const navigate = useNavigate();
 
 
   const [assessments, setAssessments] = useState([]); // start empty
@@ -110,7 +112,15 @@ const AssessmentSystem = () => {
           });
         }
       });
-      const currentStudentId = currentStudent.id; // replace with actual student id
+      let currentStudentId;
+
+      if(currentUser === 'admin'){
+           currentStudentId ='demo'; // replace with actual student i
+
+      }else{
+  currentStudentId = currentStudent?.id; // student id
+
+      }
 
       const submitted = {};
       list.forEach((assessment) => {
@@ -432,8 +442,8 @@ const AssessmentSystem = () => {
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${assessment.status === "scheduled"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
                       }`}
                   >
                     {assessment.status}
@@ -453,8 +463,8 @@ const AssessmentSystem = () => {
                 <button
                   onClick={() => toggleAssessmentStatus(assessment.id)}
                   className={`px-3 py-1 rounded-lg text-sm ${assessment.status === "draft"
-                      ? "bg-green-100 text-green-800 hover:bg-green-200"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    ? "bg-green-100 text-green-800 hover:bg-green-200"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                     } transition-colors`}
                 >
                   {assessment.status === "draft" ? "Publish" : "Unpublish"}
@@ -861,16 +871,16 @@ const AssessmentSystem = () => {
                           key={type.value}
                           onClick={() => toggleAnswerType(type.value)}
                           className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${isSelected
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
                             }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div
                                 className={`p-2 rounded-lg ${isSelected
-                                    ? "bg-blue-100 text-blue-600"
-                                    : "bg-gray-100 text-gray-600"
+                                  ? "bg-blue-100 text-blue-600"
+                                  : "bg-gray-100 text-gray-600"
                                   }`}
                               >
                                 <Icon size={18} />
@@ -886,8 +896,8 @@ const AssessmentSystem = () => {
                             </div>
                             <div
                               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-gray-300"
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-gray-300"
                                 }`}
                             >
                               {isSelected && (
@@ -922,8 +932,8 @@ const AssessmentSystem = () => {
                   <span className="text-gray-600">Status:</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${selectedAssessment.status === "scheduled"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
                       }`}
                   >
                     {selectedAssessment.status}
@@ -1388,8 +1398,8 @@ const AssessmentSystem = () => {
               <div className="border-2 border-dashed border-red-300 rounded-lg p-8 text-center">
                 <Mic
                   className={`mx-auto mb-4 ${isCurrentlyRecording
-                      ? "text-red-600 animate-pulse"
-                      : "text-red-400"
+                    ? "text-red-600 animate-pulse"
+                    : "text-red-400"
                     }`}
                   size={48}
                 />
@@ -1761,7 +1771,7 @@ const AssessmentSystem = () => {
               className="bg-blue-600 h-2 rounded-full transition-all"
               style={{
                 width: `${((currentQuestionIndex + 1) /
-                    selectedAssessment.questions.length) *
+                  selectedAssessment.questions.length) *
                   100
                   }%`,
               }}
@@ -1894,7 +1904,10 @@ const AssessmentSystem = () => {
                     localStorage.removeItem("role");
                     setCurrentUser(null);
                     setCurrentStudent(null);
-                    setCurrentView("login"); // Or redirect to login
+                    setCurrentView("login");
+
+                    // Navigate to LoginForm
+                    navigate("/");// Or redirect to login
                   }}
                   className="px-4 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                 >
