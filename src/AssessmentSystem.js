@@ -17,10 +17,9 @@ import {
 } from "lucide-react";
 
 import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc ,arrayUnion   } from "firebase/firestore";
-import {  ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
-import { db,storage   } from "./firebaseConfig";
+import { db   } from "./firebaseConfig";
 
 const AssessmentSystem = () => {
   const [currentUser, setCurrentUser] = useState("admin");
@@ -56,13 +55,7 @@ const [assessments, setAssessments] = useState([]); // start empty
       color: "blue",
       description: "Written response",
     },
-    {
-      value: "audio",
-      label: "Audio Recording",
-      icon: Mic,
-      color: "red",
-      description: "Voice recording (Max 5 min + Playback)",
-    },
+    
     {
       value: "github",
       label: "GitHub Link",
@@ -138,20 +131,7 @@ useEffect(() => {
   fetchAssessments(); // fetch all assessments when component loads
 }, []);
 
-const uploadFile = async (file, folder, assessmentId, questionId) => {
-  console.log("upload file");
 
-   try {
-    const path = `${folder}/${assessmentId}/${questionId}_${file.name}`;
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file); // Upload file
-    const url = await getDownloadURL(storageRef); // Get public URL
-    return url;
-  } catch (err) {
-    console.error("Firebase upload error:", err);
-    throw err;
-  }
-};
   const createAssessment = async() => {
       console.log("create assessment clicked");
 
@@ -1164,11 +1144,13 @@ const addQuestion = async (assessmentId) => {
       if (file && file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (e) => {
+                const base64String = e.target.result; // This includes "data:image/png;base64,..."
+
           setUploadedFiles((prev) => ({
             ...prev,
             [questionId]: {
                file,
-              preview: e.target.result,
+              preview: base64String,
               name: file.name,
             },
           }));
@@ -1176,7 +1158,7 @@ const addQuestion = async (assessmentId) => {
             ...prev,
             [questionId]: {
               ...prev[questionId],
-              image: file.name,
+              image: base64String,
             },
           }));
         };
@@ -1276,6 +1258,13 @@ const addQuestion = async (assessmentId) => {
       if (ref && ref.value) {
         questionAnswers[type] = ref.value;
       }
+      if (type === "image") {
+        const uploaded = uploadedFiles[question.id];
+        if (uploaded?.preview) {
+          questionAnswers[type] = uploaded.preview; // Base64 string
+          console.log(`📸 Using Base64 for question ${question.id}`);
+        }
+      }
     });
     if (Object.keys(questionAnswers).length > 0) {
       finalAnswers[question.id] = questionAnswers;
@@ -1283,34 +1272,6 @@ const addQuestion = async (assessmentId) => {
   });
 
   console.log("✅ Collected answers:", finalAnswers);
-
-  // Upload images
-  for (const questionId of Object.keys(finalAnswers)) {
-    const key = questionId.toString(); // ensure string
-    console.log(`🔹 Checking for uploaded file for question ${key}`);
-    const fileData = uploadedFiles[key];
-    if (fileData?.file instanceof File) {
-      try {
-        console.log(`⬆️ Uploading image for question ${key}:`, fileData.file.name);
-        const url = await uploadFile(
-          fileData.file,
-          "images",
-          selectedAssessment.firebaseId,
-          key
-        );
-        console.log(`✅ Image uploaded, URL: ${url}`);
-        finalAnswers[key] = {
-          ...finalAnswers[key],
-          image: url,
-        };
-      } catch (err) {
-        console.error(`❌ Failed to upload image for question ${key}:`, err);
-        alert(`Failed to upload image for question ${key}`);
-      }
-    } else {
-      console.log(`ℹ️ No file to upload for question ${key}`);
-    }
-  }
 
   // Prepare submission
   const submission = {
