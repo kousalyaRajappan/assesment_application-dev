@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Calendar,
   Clock,
@@ -76,7 +76,9 @@ const navigate = useNavigate();
       description: "Image file",
     },
   ];
-  const fetchAssessments = async () => {
+
+  // Wrap fetchAssessments with useCallback to prevent unnecessary re-renders
+  const fetchAssessments = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "assessments"));
       const list = querySnapshot.docs.map((doc) => {
@@ -139,10 +141,10 @@ const navigate = useNavigate();
       console.error("Error fetching assessments:", error);
       alert("Failed to fetch assessments. Check console for details.");
     }
-  };
+  }, [currentUser, currentStudent?.id]); // Dependencies that fetchAssessments actually uses
+
   useEffect(() => {
     const role = JSON.parse(localStorage.getItem("role"));
-
     const storedUser = JSON.parse(localStorage.getItem("currentUser"));
 
     setCurrentStudent(storedUser);
@@ -151,8 +153,7 @@ const navigate = useNavigate();
     if (role === 'admin') {
       fetchAssessments();
     }
-
-  }, []);
+  }, [fetchAssessments]);
 
   // Only fetch assessments when currentStudent is loaded
   useEffect(() => {
@@ -160,7 +161,7 @@ const navigate = useNavigate();
       console.log("Fetching assessments for student:", currentStudent.id);
       fetchAssessments();
     }
-  }, [currentStudent]);
+  }, [currentStudent, fetchAssessments]);
 
   const createAssessment = async () => {
     console.log("create assessment clicked");
@@ -189,12 +190,12 @@ const navigate = useNavigate();
       try {
         const docRef = await addDoc(collection(db, "assessments"), assessment);
         console.log("Assessment added with ID:", docRef.id);
-        alert("✅ Assessment saved successfully!"); // should now show
+        alert("Assessment saved successfully!"); // should now show
         // setAssessments([...assessments, { ...assessment, firebaseId: docRef.id }]);
         setCurrentView("dashboard");
       } catch (error) {
         console.error("Error adding assessment:", error);
-        alert("❌ Could not save assessment. Please try again.");
+        alert("Could not save assessment. Please try again.");
       }
 
       fetchAssessments();
@@ -271,10 +272,10 @@ const navigate = useNavigate();
 
       // setQuestionText("");
       setSelectedAnswerTypes(["text"]);
-      alert("✅ Question added successfully!");
+      alert("Question added successfully!");
     } catch (error) {
       console.error("Error adding question:", error);
-      alert("❌ Could not add question. Check console.");
+      alert("Could not add question. Check console.");
     }
   };
 
@@ -319,7 +320,7 @@ const navigate = useNavigate();
       console.log(`Question ${questionId} removed from assessment ${assessmentId}`);
     } catch (error) {
       console.error("Error removing question:", error);
-      alert("❌ Could not remove question. Check console.");
+      alert("Could not remove question. Check console.");
     }
   };
 
@@ -658,7 +659,7 @@ const navigate = useNavigate();
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-2">
-                    📅 Start Date
+                    Start Date
                   </label>
                   <input
                     ref={dateRef}
@@ -672,7 +673,7 @@ const navigate = useNavigate();
 
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-2">
-                    🕒 Start Time
+                    Start Time
                   </label>
                   <input
                     ref={timeRef}
@@ -686,7 +687,7 @@ const navigate = useNavigate();
 
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-xs text-blue-700">
-                  💡 <strong>How it works:</strong> Students can start the
+                  How it works: Students can start the
                   assessment from the start date/time and have the selected
                   duration to complete it.
                 </p>
@@ -1263,7 +1264,7 @@ const navigate = useNavigate();
     };
 
     const handleSubmit = async () => {
-      console.log("🔹 Submitting assessment...");
+      console.log("Submitting assessment...");
       setIsSubmitting(true);
 
       // Clear any active timers
@@ -1286,7 +1287,7 @@ const navigate = useNavigate();
             const uploaded = uploadedFiles[question.id];
             if (uploaded?.preview) {
               questionAnswers[type] = uploaded.preview; // Base64 string
-              console.log(`📸 Using Base64 for question ${question.id}`);
+              console.log(`Using Base64 for question ${question.id}`);
             }
           }
         });
@@ -1295,7 +1296,7 @@ const navigate = useNavigate();
         }
       });
 
-      console.log("✅ Collected answers:", finalAnswers);
+      console.log("Collected answers:", finalAnswers);
 
       // Prepare submission
       const submission = {
@@ -1304,7 +1305,7 @@ const navigate = useNavigate();
         studentId: currentStudent.id, // replace with actual student ID
       };
 
-      console.log("🔹 Submission object:", submission);
+      console.log("Submission object:", submission);
 
       try {
         const docRef = doc(db, "assessments", selectedAssessment.firebaseId);
@@ -1312,13 +1313,13 @@ const navigate = useNavigate();
           submissions: arrayUnion(submission),
         });
 
-        console.log("✅ Submission saved to Firestore!");
+        console.log("Submission saved to Firestore!");
         fetchAssessments(); // refresh list if needed
-        alert("✅ Assessment submitted successfully!");
+        alert("Assessment submitted successfully!");
         setCurrentView("dashboard");
       } catch (error) {
-        console.error("❌ Error submitting assessment:", error);
-        alert("❌ Failed to submit assessment. Check console.");
+        console.error("Error submitting assessment:", error);
+        alert("Failed to submit assessment. Check console.");
       } finally {
         setIsSubmitting(false);
       }
@@ -1355,7 +1356,7 @@ const navigate = useNavigate();
                 placeholder="Type your answer here... You can include links like https://example.com"
               />
               <div className="mt-2 text-xs text-gray-500">
-                💡 Tip: Include links by typing the full URL (e.g.,
+                Tip: Include links by typing the full URL (e.g.,
                 https://example.com)
               </div>
             </div>
@@ -1407,7 +1408,7 @@ const navigate = useNavigate();
                 {isCurrentlyRecording ? (
                   <div>
                     <p className="text-red-600 mb-2 font-medium">
-                      🔴 Recording in progress...
+                      Recording in progress...
                     </p>
 
                     {/* Recording Timer */}
@@ -1438,14 +1439,14 @@ const navigate = useNavigate();
                       onClick={() => stopRecording(question.id)}
                       className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium text-lg"
                     >
-                      ⏹️ Stop Recording
+                      Stop Recording
                     </button>
                   </div>
                 ) : hasAudioRecording ? (
                   <div>
                     <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="text-yellow-600">⚠️</div>
+                        <div className="text-yellow-600">Warning</div>
                         <p className="text-yellow-800 font-semibold">
                           DEMO MODE - NO ACTUAL AUDIO
                         </p>
@@ -1459,7 +1460,7 @@ const navigate = useNavigate();
                     </div>
 
                     <p className="text-green-600 mb-4 font-medium">
-                      ✅ Audio interface recorded successfully
+                      Audio interface recorded successfully
                     </p>
 
                     <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -1484,7 +1485,7 @@ const navigate = useNavigate();
                       <div className="bg-white rounded-lg p-4 border-2 border-dashed border-gray-300">
                         <div className="mb-3 p-3 bg-red-50 rounded-lg border border-red-200">
                           <p className="text-red-700 font-semibold text-center mb-1">
-                            🔇 NO SOUND - VISUAL DEMO ONLY
+                            NO SOUND - VISUAL DEMO ONLY
                           </p>
                           <p className="text-xs text-red-600 text-center">
                             This button simulates audio playback but produces no
@@ -1544,8 +1545,8 @@ const navigate = useNavigate();
                         <div className="text-center">
                           <p className="text-xs text-gray-600">
                             {isCurrentlyPlaying
-                              ? "🔇 Visual simulation running (no audio output)"
-                              : "🔇 Click to see interface simulation (no sound)"}
+                              ? "Visual simulation running (no audio output)"
+                              : "Click to see interface simulation (no sound)"}
                           </p>
                         </div>
                       </div>
@@ -1569,7 +1570,7 @@ const navigate = useNavigate();
                             )}
                           </div>
                           <p className="text-xs text-gray-600 text-center">
-                            📊 Visual waveform (no audio)
+                            Visual waveform (no audio)
                           </p>
                         </div>
                       ) : (
@@ -1591,7 +1592,7 @@ const navigate = useNavigate();
                         onClick={() => startRecording(question.id)}
                         className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
                       >
-                        🎤 Record Again
+                        Record Again
                       </button>
                     </div>
                   </div>
@@ -1602,16 +1603,16 @@ const navigate = useNavigate();
                     </p>
                     <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-700 mb-2">
-                        📝 <strong>Demo Mode:</strong> This simulates audio
+                        <strong>Demo Mode:</strong> This simulates audio
                         recording functionality.
                       </p>
                       <p className="text-xs text-blue-600">
-                        • Maximum recording time: 5 minutes
+                        Maximum recording time: 5 minutes
                         <br />
-                        • Real-time timer and progress tracking
+                        Real-time timer and progress tracking
                         <br />
-                        • Playback feature to review recordings
-                        <br />• Manual stop or auto-stop at time limit
+                        Playback feature to review recordings
+                        <br />Manual stop or auto-stop at time limit
                       </p>
                     </div>
                     <button
@@ -1619,7 +1620,7 @@ const navigate = useNavigate();
                       onClick={() => startRecording(question.id)}
                       className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
                     >
-                      🎤 Start Recording (Max 5 min)
+                      Start Recording (Max 5 min)
                     </button>
                   </div>
                 )}
@@ -1651,7 +1652,7 @@ const navigate = useNavigate();
                 placeholder="https://github.com/username/repository"
               />
               <div className="mt-2 text-xs text-gray-500">
-                💡 Tip: Make sure your repository is public so it can be
+                Tip: Make sure your repository is public so it can be
                 accessed for review
               </div>
               {currentAnswer && (
@@ -1698,7 +1699,7 @@ const navigate = useNavigate();
                       />
                     </div>
                     <p className="text-green-600 mb-4 font-medium">
-                      ✅ {uploadedFile.name}
+                      {uploadedFile.name}
                     </p>
                     <button
                       type="button"
@@ -1723,7 +1724,7 @@ const navigate = useNavigate();
                       }
                       className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      📁 Choose Image File
+                      Choose Image File
                     </button>
                   </div>
                 )}
@@ -1742,7 +1743,7 @@ const navigate = useNavigate();
                 />
 
                 <div className="mt-4 text-xs text-gray-500">
-                  💡 Supported formats: PNG, JPG, GIF, WebP (Max size: 10MB)
+                  Supported formats: PNG, JPG, GIF, WebP (Max size: 10MB)
                 </div>
               </div>
             </div>
