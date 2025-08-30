@@ -688,8 +688,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" placeholder="Enter your username">
+                    <label for="username">Email:</label>
+                    <input type="text" id="username" placeholder="Enter your Email">
                 </div>
 
                 <div class="form-group">
@@ -1695,10 +1695,8 @@
 
                         } else {
                             document.getElementById('loginSection').style.display = 'none';
-
                             const studentData = snapshot.docs[0].data();
                             currentUser = { username, role, profile: studentData };
-
                             window.parent.postMessage({
                                 type: "LOGIN_SUCCESS",
                                 role: "student",

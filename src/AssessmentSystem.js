@@ -1,4 +1,4 @@
-import React, { useState, useRef ,useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -16,19 +16,19 @@ import {
   Check,
 } from "lucide-react";
 
-import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc ,arrayUnion   } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 
-import { db   } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
 
 const AssessmentSystem = () => {
   // const [currentUser, setCurrentUser] = useState("admin");
-    const [currentStudent, setCurrentStudent] = useState(null); // store full user object
+  const [currentStudent, setCurrentStudent] = useState(null); // store full user object
   const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
 
 
 
-const [assessments, setAssessments] = useState([]); // start empty
+  const [assessments, setAssessments] = useState([]); // start empty
 
 
   const [currentView, setCurrentView] = useState("dashboard");
@@ -41,14 +41,14 @@ const [assessments, setAssessments] = useState([]); // start empty
   const dateRef = useRef();
   const timeRef = useRef();
   const durationRef = useRef();
-    const questionRef = useRef();
+  const questionRef = useRef();
 
 
   // State for question form
-  const [selectedAnswerTypes, setSelectedAnswerTypes] =useState([]);
+  const [selectedAnswerTypes, setSelectedAnswerTypes] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-// const [questionText, setQuestionText] = useState("");
+  // const [questionText, setQuestionText] = useState("");
 
   const answerTypes = [
     {
@@ -58,7 +58,7 @@ const [assessments, setAssessments] = useState([]); // start empty
       color: "blue",
       description: "Written response",
     },
-    
+
     {
       value: "github",
       label: "GitHub Link",
@@ -74,83 +74,88 @@ const [assessments, setAssessments] = useState([]); // start empty
       description: "Image file",
     },
   ];
-const fetchAssessments = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "assessments"));
-    const list = querySnapshot.docs.map((doc) => {
-      const data = doc.data();
+  const fetchAssessments = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "assessments"));
+      const list = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
 
-      return {
-        firebaseId: doc.id, // Firestore auto-generated ID
-        ...data,
-        // Convert questions map → array
-        questions: data.questions ? Object.values(data.questions) : [],
-       submissions: data.submissions || [],
+        return {
+          firebaseId: doc.id, // Firestore auto-generated ID
+          ...data,
+          // Convert questions map → array
+          questions: data.questions ? Object.values(data.questions) : [],
+          submissions: data.submissions || [],
 
-      };
-    });
+        };
+      });
 
-    setAssessments(list);
+      setAssessments(list);
 
-    // Build initial answers (optional)
-    const initialAnswers = {};
+      // Build initial answers (optional)
+      const initialAnswers = {};
 
-    list.forEach((assessment) => {
-      if (Array.isArray(assessment.questions)) {
-        assessment.questions.forEach((q) => {
-          if (!initialAnswers[q.id]) initialAnswers[q.id] = {};
+      list.forEach((assessment) => {
+        if (Array.isArray(assessment.questions)) {
+          assessment.questions.forEach((q) => {
+            if (!initialAnswers[q.id]) initialAnswers[q.id] = {};
 
-          if (Array.isArray(q.answerTypes)) {
-            q.answerTypes.forEach((type) => {
-              initialAnswers[q.id][type] = q.response?.[type] || "";
-            });
-          } else if (q.answerTypes) {
-            initialAnswers[q.id][q.answerTypes] = q.response || "";
-          }
-        });
-      }
-    });
- const currentStudentId = currentStudent.id; // replace with actual student id
+            if (Array.isArray(q.answerTypes)) {
+              q.answerTypes.forEach((type) => {
+                initialAnswers[q.id][type] = q.response?.[type] || "";
+              });
+            } else if (q.answerTypes) {
+              initialAnswers[q.id][q.answerTypes] = q.response || "";
+            }
+          });
+        }
+      });
+      const currentStudentId = currentStudent.id; // replace with actual student id
 
-    const submitted = {};
-    list.forEach((assessment) => {
-      const hasSubmitted = assessment.submissions?.some(
-        (s) => s.studentId === currentStudentId
-      );
-      if (hasSubmitted) {
-        submitted[assessment.id] = true;
-      }
-    });
+      const submitted = {};
+      list.forEach((assessment) => {
+        const hasSubmitted = assessment.submissions?.some(
+          (s) => s.studentId === currentStudentId
+        );
+        if (hasSubmitted) {
+          submitted[assessment.id] = true;
+        }
+      });
 
-    setStudentSubmissions(submitted);
-    // setAnswers(initialAnswers);
-    console.log("Fetched assessments:", list);
-  } catch (error) {
-    console.error("Error fetching assessments:", error);
-    alert("Failed to fetch assessments. Check console for details.");
-  }
-};
-useEffect(() => {
-  const role = JSON.parse(localStorage.getItem("role"));
-    console.log("Stored user on useEffect:",role);
+      setStudentSubmissions(submitted);
+      // setAnswers(initialAnswers);
+      console.log("Fetched assessments:", list);
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+      alert("Failed to fetch assessments. Check console for details.");
+    }
+  };
+  useEffect(() => {
+    const role = JSON.parse(localStorage.getItem("role"));
 
-  const storedUser = JSON.parse(localStorage.getItem("currentUser"));
-  console.log("Stored user on load:", storedUser.email);
+    const storedUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  setCurrentStudent(storedUser);
-  setCurrentUser(role);
-   setCurrentView("dashboard");
-  console.log("Stored user on load:", storedUser.id);
+    setCurrentStudent(storedUser);
+    setCurrentUser(role);
+    setCurrentView("dashboard");
+    if (role === 'admin') {
+      fetchAssessments();
+    }
 
-    console.log("Admin detected on load, fetching assessments...");
-    fetchAssessments(); // fetch assessments only if admin
+  }, []);
 
-}, []);
+  // Only fetch assessments when currentStudent is loaded
+  useEffect(() => {
+    if (currentStudent?.id) {
+      console.log("Fetching assessments for student:", currentStudent.id);
+      fetchAssessments();
+    }
+  }, [currentStudent]);
 
-  const createAssessment = async() => {
-      console.log("create assessment clicked");
+  const createAssessment = async () => {
+    console.log("create assessment clicked");
 
-      
+
     const title = titleRef.current?.value;
     const description = descriptionRef.current?.value;
     const scheduledDate = dateRef.current?.value;
@@ -172,17 +177,17 @@ useEffect(() => {
 
       // setAssessments([...assessments, assessment]);
       try {
-            const docRef = await addDoc(collection(db, "assessments"), assessment);
-            console.log("Assessment added with ID:", docRef.id);
-            alert("✅ Assessment saved successfully!"); // should now show
-            // setAssessments([...assessments, { ...assessment, firebaseId: docRef.id }]);
-            setCurrentView("dashboard");
-          } catch (error) {
-            console.error("Error adding assessment:", error);
-            alert("❌ Could not save assessment. Please try again.");
-          }
+        const docRef = await addDoc(collection(db, "assessments"), assessment);
+        console.log("Assessment added with ID:", docRef.id);
+        alert("✅ Assessment saved successfully!"); // should now show
+        // setAssessments([...assessments, { ...assessment, firebaseId: docRef.id }]);
+        setCurrentView("dashboard");
+      } catch (error) {
+        console.error("Error adding assessment:", error);
+        alert("❌ Could not save assessment. Please try again.");
+      }
 
-          fetchAssessments();
+      fetchAssessments();
       // Clear form
       if (titleRef.current) titleRef.current.value = "";
       if (descriptionRef.current) descriptionRef.current.value = "";
@@ -194,150 +199,150 @@ useEffect(() => {
     }
   };
 
-  const deleteAssessment = async(firebaseId) => {
-      console.log("Deleted assessment:", firebaseId);
-      try {
+  const deleteAssessment = async (firebaseId) => {
+    console.log("Deleted assessment:", firebaseId);
+    try {
       await deleteDoc(doc(db, "assessments", firebaseId));
-    setAssessments(prev => prev.filter(a => a.firebaseId !== firebaseId));
-    console.log("Deleted:", firebaseId);
-  } catch (error) {
-    console.error("Error deleting assessment:", error.message);
-  }
+      setAssessments(prev => prev.filter(a => a.firebaseId !== firebaseId));
+      console.log("Deleted:", firebaseId);
+    } catch (error) {
+      console.error("Error deleting assessment:", error.message);
+    }
 
     // setAssessments(assessments.filter((a) => a.id !== id));
   };
-const addQuestion = async (assessmentId) => {
-      const questionText = questionRef.current?.value;
-      console.log("question entered is",questionText);
+  const addQuestion = async (assessmentId) => {
+    const questionText = questionRef.current?.value;
+    console.log("question entered is", questionText);
 
-  if (!questionText || selectedAnswerTypes.length === 0) return;
+    if (!questionText || selectedAnswerTypes.length === 0) return;
 
-  const newQuestionId = Date.now(); // unique id
-  const newQuestion = {
-    id: newQuestionId,
-    question: questionText,        // question text from state
-    answerTypes: selectedAnswerTypes,
-    answer: {},                     // empty answers initially
-  };
-
-  try {
-    // Find the Firestore doc using firebaseId
-    const assessment = assessments.find((a) => a.id === assessmentId);
-    if (!assessment) return;
-
-    const docRef = doc(db, "assessments", assessment.firebaseId);
-
-    // Merge new question into existing questions object
-    // Firestore expects an object, not array
-    const updatedQuestions = {
-      ...(assessment.questions || {}),  // convert undefined to empty object
-      [newQuestionId]: newQuestion,
+    const newQuestionId = Date.now(); // unique id
+    const newQuestion = {
+      id: newQuestionId,
+      question: questionText,        // question text from state
+      answerTypes: selectedAnswerTypes,
+      answer: {},                     // empty answers initially
     };
 
-    // Update Firestore
-    await updateDoc(docRef, { questions: updatedQuestions });
+    try {
+      // Find the Firestore doc using firebaseId
+      const assessment = assessments.find((a) => a.id === assessmentId);
+      if (!assessment) return;
 
-    // Update local state
-    setAssessments((prev) =>
-      prev.map((a) =>
-        a.id === assessmentId ? { ...a, questions: updatedQuestions } : a
-      )
-    );
+      const docRef = doc(db, "assessments", assessment.firebaseId);
 
-    if (selectedAssessment && selectedAssessment.id === assessmentId) {
-      setSelectedAssessment((prev) => ({
-        ...prev,
-        questions: updatedQuestions,
-      }));
+      // Merge new question into existing questions object
+      // Firestore expects an object, not array
+      const updatedQuestions = {
+        ...(assessment.questions || {}),  // convert undefined to empty object
+        [newQuestionId]: newQuestion,
+      };
+
+      // Update Firestore
+      await updateDoc(docRef, { questions: updatedQuestions });
+
+      // Update local state
+      setAssessments((prev) =>
+        prev.map((a) =>
+          a.id === assessmentId ? { ...a, questions: updatedQuestions } : a
+        )
+      );
+
+      if (selectedAssessment && selectedAssessment.id === assessmentId) {
+        setSelectedAssessment((prev) => ({
+          ...prev,
+          questions: updatedQuestions,
+        }));
+      }
+
+      // Clear form
+      if (questionRef.current) questionRef.current.value = "";
+
+      // setQuestionText("");
+      setSelectedAnswerTypes(["text"]);
+      alert("✅ Question added successfully!");
+    } catch (error) {
+      console.error("Error adding question:", error);
+      alert("❌ Could not add question. Check console.");
     }
-
-    // Clear form
-          if (questionRef.current) questionRef.current.value = "";
-
-    // setQuestionText("");
-    setSelectedAnswerTypes(["text"]);
-    alert("✅ Question added successfully!");
-  } catch (error) {
-    console.error("Error adding question:", error);
-    alert("❌ Could not add question. Check console.");
-  }
-};
-
-  const removeQuestion = async (assessmentId, questionId) => {
-  try {
-    // Find the assessment
-    const assessment = assessments.find((a) => a.id === assessmentId);
-    if (!assessment) return;
-
-    // Remove the question from the existing questions object/array
-    const updatedQuestions = Array.isArray(assessment.questions)
-      ? assessment.questions.filter((q) => q.id !== questionId)
-      : Object.values(assessment.questions).filter((q) => q.id !== questionId);
-
-    // If your Firestore stores questions as an object keyed by id, convert back to object
-    const updatedQuestionsObj = {};
-    updatedQuestions.forEach((q) => {
-      updatedQuestionsObj[q.id] = q;
-    });
-
-    // Update Firestore
-    const docRef = doc(db, "assessments", assessment.firebaseId);
-    await updateDoc(docRef, {
-      questions: updatedQuestionsObj,
-    });
-
-    // Update local state
-    setAssessments((prev) =>
-      prev.map((a) =>
-        a.id === assessmentId ? { ...a, questions: updatedQuestionsObj } : a
-      )
-    );
-
-    // Update selectedAssessment if needed
-    if (selectedAssessment && selectedAssessment.id === assessmentId) {
-      setSelectedAssessment((prev) => ({
-        ...prev,
-        questions: updatedQuestionsObj,
-      }));
-    }
-
-    console.log(`Question ${questionId} removed from assessment ${assessmentId}`);
-  } catch (error) {
-    console.error("Error removing question:", error);
-    alert("❌ Could not remove question. Check console.");
-  }
   };
 
-  const toggleAssessmentStatus = async(id) => {
+  const removeQuestion = async (assessmentId, questionId) => {
     try {
-    // Find the assessment in state
-    const assessment = assessments.find((a) => a.id === id);
-    if (!assessment) return;
+      // Find the assessment
+      const assessment = assessments.find((a) => a.id === assessmentId);
+      if (!assessment) return;
 
-    // Toggle status
-    const newStatus = assessment.status === "draft" ? "scheduled" : "draft";
+      // Remove the question from the existing questions object/array
+      const updatedQuestions = Array.isArray(assessment.questions)
+        ? assessment.questions.filter((q) => q.id !== questionId)
+        : Object.values(assessment.questions).filter((q) => q.id !== questionId);
 
-    // Update Firestore
-    const docRef = doc(db, "assessments", assessment.firebaseId);
-    await updateDoc(docRef, { status: newStatus });
+      // If your Firestore stores questions as an object keyed by id, convert back to object
+      const updatedQuestionsObj = {};
+      updatedQuestions.forEach((q) => {
+        updatedQuestionsObj[q.id] = q;
+      });
 
-    // Update local state
-    setAssessments(
-      assessments.map((a) =>
-        a.id === id ? { ...a, status: newStatus } : a
-      )
-    );
+      // Update Firestore
+      const docRef = doc(db, "assessments", assessment.firebaseId);
+      await updateDoc(docRef, {
+        questions: updatedQuestionsObj,
+      });
 
-    // Optional: update selectedAssessment if it's the same one
-    if (selectedAssessment && selectedAssessment.id === id) {
-      setSelectedAssessment({ ...selectedAssessment, status: newStatus });
+      // Update local state
+      setAssessments((prev) =>
+        prev.map((a) =>
+          a.id === assessmentId ? { ...a, questions: updatedQuestionsObj } : a
+        )
+      );
+
+      // Update selectedAssessment if needed
+      if (selectedAssessment && selectedAssessment.id === assessmentId) {
+        setSelectedAssessment((prev) => ({
+          ...prev,
+          questions: updatedQuestionsObj,
+        }));
+      }
+
+      console.log(`Question ${questionId} removed from assessment ${assessmentId}`);
+    } catch (error) {
+      console.error("Error removing question:", error);
+      alert("❌ Could not remove question. Check console.");
     }
+  };
 
-    console.log(`Assessment ${id} status updated to ${newStatus} in Firestore.`);
-  } catch (error) {
-    console.error("Error updating assessment status:", error);
-    alert("Failed to update assessment status. Check console.");
-  }
+  const toggleAssessmentStatus = async (id) => {
+    try {
+      // Find the assessment in state
+      const assessment = assessments.find((a) => a.id === id);
+      if (!assessment) return;
+
+      // Toggle status
+      const newStatus = assessment.status === "draft" ? "scheduled" : "draft";
+
+      // Update Firestore
+      const docRef = doc(db, "assessments", assessment.firebaseId);
+      await updateDoc(docRef, { status: newStatus });
+
+      // Update local state
+      setAssessments(
+        assessments.map((a) =>
+          a.id === id ? { ...a, status: newStatus } : a
+        )
+      );
+
+      // Optional: update selectedAssessment if it's the same one
+      if (selectedAssessment && selectedAssessment.id === id) {
+        setSelectedAssessment({ ...selectedAssessment, status: newStatus });
+      }
+
+      console.log(`Assessment ${id} status updated to ${newStatus} in Firestore.`);
+    } catch (error) {
+      console.error("Error updating assessment status:", error);
+      alert("Failed to update assessment status. Check console.");
+    }
   };
 
   const toggleAnswerType = (type) => {
@@ -426,11 +431,10 @@ const addQuestion = async (assessmentId) => {
                     {assessment.duration} min
                   </span>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      assessment.status === "scheduled"
+                    className={`px-2 py-1 rounded-full text-xs ${assessment.status === "scheduled"
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
-                    }`}
+                      }`}
                   >
                     {assessment.status}
                   </span>
@@ -448,11 +452,10 @@ const addQuestion = async (assessmentId) => {
                 </button>
                 <button
                   onClick={() => toggleAssessmentStatus(assessment.id)}
-                  className={`px-3 py-1 rounded-lg text-sm ${
-                    assessment.status === "draft"
+                  className={`px-3 py-1 rounded-lg text-sm ${assessment.status === "draft"
                       ? "bg-green-100 text-green-800 hover:bg-green-200"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  } transition-colors`}
+                    } transition-colors`}
                 >
                   {assessment.status === "draft" ? "Publish" : "Unpublish"}
                 </button>
@@ -717,245 +720,241 @@ const addQuestion = async (assessmentId) => {
     );
   };
 
- const ManageAssessment = () => {
-  if (!selectedAssessment) return null;
+  const ManageAssessment = () => {
+    if (!selectedAssessment) return null;
 
-  // Convert questions object to array safely
-  
-   const questionsArray = selectedAssessment.questions
-  ? Object.values(selectedAssessment.questions)
-  : [];
+    // Convert questions object to array safely
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Manage Assessment
-        </h1>
-        <h2 className="text-xl text-gray-600">{selectedAssessment.title}</h2>
-      </div>
+    const questionsArray = selectedAssessment.questions
+      ? Object.values(selectedAssessment.questions)
+      : [];
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Questions List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border">
-            <div className="p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Questions
-              </h3>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {questionsArray.length > 0 ? (
-                questionsArray.map((question, index) => (
-                  <div
-                    key={question.id}
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-6"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-full font-medium">
-                          Q{index + 1}
-                        </span>
-                        <h4 className="text-lg font-medium text-gray-900">
-                          Question {index + 1}
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() =>
-                          removeQuestion(selectedAssessment.id, question.id)
-                        }
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-gray-900 text-lg leading-relaxed">
-                        {question.question}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700">
-                        Answer Types Required:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {(question.answerTypes || [])
-                          .filter(Boolean) // remove empty strings
-                          .map((type) => {
-                            const answerType = answerTypes.find(
-                              (t) => t.value === type
-                            );
-                            const Icon = answerType?.icon || Type;
-                            return (
-                              <div
-                                key={type}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
-                              >
-                                <Icon size={16} />
-                                {answerType?.label || type}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <BookOpen
-                    className="mx-auto mb-4 text-gray-400"
-                    size={48}
-                  />
-                  <h3 className="text-lg font-medium mb-2">
-                    No questions added yet
-                  </h3>
-                  <p>Use the form on the right to add your first question.</p>
-                </div>
-              )}
-            </div>
-          </div>
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Manage Assessment
+          </h1>
+          <h2 className="text-xl text-gray-600">{selectedAssessment.title}</h2>
         </div>
 
-        {/* Add Question Form */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
-              Add Question
-            </h3>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Question Text
-                </label>
-                <textarea
-                    ref={questionRef}
-
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={4}
-                  placeholder="Enter your question here..."
-                />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Questions List */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm border">
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Questions
+                </h3>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Answer Types Required
-                </label>
-                <p className="text-sm text-gray-500 mb-4">
-                  Select one or more answer types for this question
-                </p>
+              <div className="p-6 space-y-6">
+                {questionsArray.length > 0 ? (
+                  questionsArray.map((question, index) => (
+                    <div
+                      key={question.id}
+                      className="bg-gray-50 border border-gray-200 rounded-xl p-6"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="bg-blue-600 text-white text-sm px-3 py-1 rounded-full font-medium">
+                            Q{index + 1}
+                          </span>
+                          <h4 className="text-lg font-medium text-gray-900">
+                            Question {index + 1}
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() =>
+                            removeQuestion(selectedAssessment.id, question.id)
+                          }
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
 
-                <div className="space-y-3">
-                  {answerTypes.map((type) => {
-                    const Icon = type.icon;
-                    const isSelected = selectedAnswerTypes.includes(type.value);
+                      <div className="mb-4">
+                        <p className="text-gray-900 text-lg leading-relaxed">
+                          {question.question}
+                        </p>
+                      </div>
 
-                    return (
-                      <div
-                        key={type.value}
-                        onClick={() => toggleAnswerType(type.value)}
-                        className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-                          isSelected
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`p-2 rounded-lg ${
-                                isSelected
-                                  ? "bg-blue-100 text-blue-600"
-                                  : "bg-gray-100 text-gray-600"
-                              }`}
-                            >
-                              <Icon size={18} />
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900">
-                                {type.label}
-                              </h4>
-                              <p className="text-sm text-gray-500">
-                                {type.description}
-                              </p>
-                            </div>
-                          </div>
-                          <div
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              isSelected
-                                ? "border-blue-500 bg-blue-500"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {isSelected && (
-                              <Check size={14} className="text-white" />
-                            )}
-                          </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          Answer Types Required:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(question.answerTypes || [])
+                            .filter(Boolean) // remove empty strings
+                            .map((type) => {
+                              const answerType = answerTypes.find(
+                                (t) => t.value === type
+                              );
+                              const Icon = answerType?.icon || Type;
+                              return (
+                                <div
+                                  key={type}
+                                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                                >
+                                  <Icon size={16} />
+                                  {answerType?.label || type}
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <BookOpen
+                      className="mx-auto mb-4 text-gray-400"
+                      size={48}
+                    />
+                    <h3 className="text-lg font-medium mb-2">
+                      No questions added yet
+                    </h3>
+                    <p>Use the form on the right to add your first question.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Add Question Form */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Add Question
+              </h3>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Question Text
+                  </label>
+                  <textarea
+                    ref={questionRef}
+
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={4}
+                    placeholder="Enter your question here..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Answer Types Required
+                  </label>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Select one or more answer types for this question
+                  </p>
+
+                  <div className="space-y-3">
+                    {answerTypes.map((type) => {
+                      const Icon = type.icon;
+                      const isSelected = selectedAnswerTypes.includes(type.value);
+
+                      return (
+                        <div
+                          key={type.value}
+                          onClick={() => toggleAnswerType(type.value)}
+                          className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${isSelected
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`p-2 rounded-lg ${isSelected
+                                    ? "bg-blue-100 text-blue-600"
+                                    : "bg-gray-100 text-gray-600"
+                                  }`}
+                              >
+                                <Icon size={18} />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">
+                                  {type.label}
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                  {type.description}
+                                </p>
+                              </div>
+                            </div>
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSelected
+                                  ? "border-blue-500 bg-blue-500"
+                                  : "border-gray-300"
+                                }`}
+                            >
+                              {isSelected && (
+                                <Check size={14} className="text-white" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => addQuestion(selectedAssessment.id)}
+                  disabled={selectedAnswerTypes.length === 0}
+                  className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                >
+                  <Plus size={18} />
+                  Add Question
+                </button>
+              </div>
+            </div>
+
+            {/* Assessment Info */}
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Assessment Info
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status:</span>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${selectedAssessment.status === "scheduled"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                      }`}
+                  >
+                    {selectedAssessment.status}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Questions:</span>
+                  <span className="font-medium">{questionsArray.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="font-medium">{selectedAssessment.duration} min</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Scheduled:</span>
+                  <span className="font-medium">{selectedAssessment.scheduledDate}</span>
                 </div>
               </div>
-
-              <button
-                onClick={() => addQuestion(selectedAssessment.id)}
-                disabled={selectedAnswerTypes.length === 0}
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-              >
-                <Plus size={18} />
-                Add Question
-              </button>
             </div>
-          </div>
 
-          {/* Assessment Info */}
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Assessment Info
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    selectedAssessment.status === "scheduled"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {selectedAssessment.status}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Questions:</span>
-                <span className="font-medium">{questionsArray.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Duration:</span>
-                <span className="font-medium">{selectedAssessment.duration} min</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Scheduled:</span>
-                <span className="font-medium">{selectedAssessment.scheduledDate}</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setCurrentView("dashboard")}
+              className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Back to Dashboard
+            </button>
           </div>
-
-          <button
-            onClick={() => setCurrentView("dashboard")}
-            className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Back to Dashboard
-          </button>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const StudentDashboard = () => {
     const availableAssessments = assessments.filter(
@@ -1159,12 +1158,12 @@ const addQuestion = async (assessmentId) => {
       if (file && file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (e) => {
-                const base64String = e.target.result; // This includes "data:image/png;base64,..."
+          const base64String = e.target.result; // This includes "data:image/png;base64,..."
 
           setUploadedFiles((prev) => ({
             ...prev,
             [questionId]: {
-               file,
+              file,
               preview: base64String,
               name: file.name,
             },
@@ -1253,67 +1252,67 @@ const addQuestion = async (assessmentId) => {
       }
     };
 
-  const handleSubmit = async () => {
-  console.log("🔹 Submitting assessment...");
-  setIsSubmitting(true);
+    const handleSubmit = async () => {
+      console.log("🔹 Submitting assessment...");
+      setIsSubmitting(true);
 
-  // Clear any active timers
-  Object.values(recordingTimers.current).forEach((timer) => clearInterval(timer));
-  Object.values(playbackTimers.current).forEach((timer) => clearInterval(timer));
-  recordingTimers.current = {};
-  playbackTimers.current = {};
+      // Clear any active timers
+      Object.values(recordingTimers.current).forEach((timer) => clearInterval(timer));
+      Object.values(playbackTimers.current).forEach((timer) => clearInterval(timer));
+      recordingTimers.current = {};
+      playbackTimers.current = {};
 
-  // Collect all answers from refs before submitting
-  const finalAnswers = { ...answers };
+      // Collect all answers from refs before submitting
+      const finalAnswers = { ...answers };
 
-  selectedAssessment.questions.forEach((question) => {
-    const questionAnswers = { ...(finalAnswers[question.id] || {}) };
-    question.answerTypes.forEach((type) => {
-      const ref = answerRefs.current[`${question.id}_${type}`];
-      if (ref && ref.value) {
-        questionAnswers[type] = ref.value;
-      }
-      if (type === "image") {
-        const uploaded = uploadedFiles[question.id];
-        if (uploaded?.preview) {
-          questionAnswers[type] = uploaded.preview; // Base64 string
-          console.log(`📸 Using Base64 for question ${question.id}`);
+      selectedAssessment.questions.forEach((question) => {
+        const questionAnswers = { ...(finalAnswers[question.id] || {}) };
+        question.answerTypes.forEach((type) => {
+          const ref = answerRefs.current[`${question.id}_${type}`];
+          if (ref && ref.value) {
+            questionAnswers[type] = ref.value;
+          }
+          if (type === "image") {
+            const uploaded = uploadedFiles[question.id];
+            if (uploaded?.preview) {
+              questionAnswers[type] = uploaded.preview; // Base64 string
+              console.log(`📸 Using Base64 for question ${question.id}`);
+            }
+          }
+        });
+        if (Object.keys(questionAnswers).length > 0) {
+          finalAnswers[question.id] = questionAnswers;
         }
+      });
+
+      console.log("✅ Collected answers:", finalAnswers);
+
+      // Prepare submission
+      const submission = {
+        submittedAt: new Date().toISOString(),
+        answers: finalAnswers,
+        studentId: currentStudent.id, // replace with actual student ID
+      };
+
+      console.log("🔹 Submission object:", submission);
+
+      try {
+        const docRef = doc(db, "assessments", selectedAssessment.firebaseId);
+        await updateDoc(docRef, {
+          submissions: arrayUnion(submission),
+        });
+
+        console.log("✅ Submission saved to Firestore!");
+        fetchAssessments(); // refresh list if needed
+        alert("✅ Assessment submitted successfully!");
+        setCurrentView("dashboard");
+      } catch (error) {
+        console.error("❌ Error submitting assessment:", error);
+        alert("❌ Failed to submit assessment. Check console.");
+      } finally {
+        setIsSubmitting(false);
       }
-    });
-    if (Object.keys(questionAnswers).length > 0) {
-      finalAnswers[question.id] = questionAnswers;
-    }
-  });
-
-  console.log("✅ Collected answers:", finalAnswers);
-
-  // Prepare submission
-  const submission = {
-    submittedAt: new Date().toISOString(),
-    answers: finalAnswers,
-    studentId: currentStudent.id, // replace with actual student ID
-  };
-
-  console.log("🔹 Submission object:", submission);
-
-  try {
-    const docRef = doc(db, "assessments", selectedAssessment.firebaseId);
-    await updateDoc(docRef, {
-      submissions: arrayUnion(submission),
-    });
-
-    console.log("✅ Submission saved to Firestore!");
-    fetchAssessments(); // refresh list if needed
-    alert("✅ Assessment submitted successfully!");
-    setCurrentView("dashboard");
-  } catch (error) {
-    console.error("❌ Error submitting assessment:", error);
-    alert("❌ Failed to submit assessment. Check console.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    };
 
     const AnswerInputSection = ({ question, answerType }) => {
       const answerTypeInfo = answerTypes.find((t) => t.value === answerType);
@@ -1388,11 +1387,10 @@ const addQuestion = async (assessmentId) => {
 
               <div className="border-2 border-dashed border-red-300 rounded-lg p-8 text-center">
                 <Mic
-                  className={`mx-auto mb-4 ${
-                    isCurrentlyRecording
+                  className={`mx-auto mb-4 ${isCurrentlyRecording
                       ? "text-red-600 animate-pulse"
                       : "text-red-400"
-                  }`}
+                    }`}
                   size={48}
                 />
 
@@ -1509,11 +1507,11 @@ const addQuestion = async (assessmentId) => {
                             <div className="text-sm font-mono text-gray-700 mb-1">
                               {isCurrentlyPlaying
                                 ? `${formatTime(
-                                    currentPlaybackTime
-                                  )} / ${formatTime(recordedDuration)} (SILENT)`
+                                  currentPlaybackTime
+                                )} / ${formatTime(recordedDuration)} (SILENT)`
                                 : `0:00 / ${formatTime(
-                                    recordedDuration
-                                  )} (VISUAL ONLY)`}
+                                  recordedDuration
+                                )} (VISUAL ONLY)`}
                             </div>
                             {/* Playback Progress Bar */}
                             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -1522,11 +1520,10 @@ const addQuestion = async (assessmentId) => {
                                 style={{
                                   width:
                                     recordedDuration > 0
-                                      ? `${
-                                          (currentPlaybackTime /
-                                            recordedDuration) *
-                                          100
-                                        }%`
+                                      ? `${(currentPlaybackTime /
+                                        recordedDuration) *
+                                      100
+                                      }%`
                                       : "0%",
                                 }}
                               ></div>
@@ -1763,11 +1760,10 @@ const addQuestion = async (assessmentId) => {
             <div
               className="bg-blue-600 h-2 rounded-full transition-all"
               style={{
-                width: `${
-                  ((currentQuestionIndex + 1) /
+                width: `${((currentQuestionIndex + 1) /
                     selectedAssessment.questions.length) *
                   100
-                }%`,
+                  }%`,
               }}
             />
           </div>
@@ -1826,14 +1822,14 @@ const addQuestion = async (assessmentId) => {
 
               <div className="flex gap-3">
                 {currentQuestionIndex ===
-                selectedAssessment.questions.length - 1 ? (
+                  selectedAssessment.questions.length - 1 ? (
                   <button
                     onClick={handleSubmit}
-                      disabled={isSubmitting}
+                    disabled={isSubmitting}
 
                     className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
-  {isSubmitting ? "Submitting..." : "Submit Assessment"}
+                    {isSubmitting ? "Submitting..." : "Submit Assessment"}
                   </button>
                 ) : (
                   <button
@@ -1884,32 +1880,25 @@ const addQuestion = async (assessmentId) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-4 bg-gray-100 rounded-lg p-2">
+                <span className="text-gray-700 font-medium">
+                  {currentUser === "admin"
+                    ? "Admin" // or you can store an admin name and display it here
+                    : currentStudent
+                      ? currentStudent.firstName
+                      : "User"}  </span>
                 <button
                   onClick={() => {
-                    setCurrentUser("admin");
-                    setCurrentView("dashboard");
+                    // Clear localStorage and reset state
+                    localStorage.removeItem("currentUser");
+                    localStorage.removeItem("role");
+                    setCurrentUser(null);
+                    setCurrentStudent(null);
+                    setCurrentView("login"); // Or redirect to login
                   }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    currentUser === "admin"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className="px-4 py-2 rounded-md text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                 >
-                  Admin
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentUser("student");
-                    setCurrentView("dashboard");
-                  }}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    currentUser === "student"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Student
+                  Logout
                 </button>
               </div>
             </div>
