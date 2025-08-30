@@ -152,7 +152,7 @@ const navigate = useNavigate();
       fetchAssessments();
     }
 
-  }, []);
+  }, [fetchAssessments]);
 
   // Only fetch assessments when currentStudent is loaded
   useEffect(() => {
