@@ -1,29 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import AssessmentSystem from './AssessmentSystem';
 import LoginForm from './LoginForm';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [role, setRole] = useState('');
-
-  const handleLogin = (username, password) => {
-    // Only allow admin/admin@123 to access admin module
-    if (username === 'admin' && password === 'admin@123') {
-      setIsAuthenticated(true);
-      setRole('admin');
-    } else {
-      alert('Invalid credentials');
-    }
-  };
-
+  
   return (
-    <div>
-      {!isAuthenticated ? (
-        <LoginForm onLogin={handleLogin} />
-      ) : (
-        <AssessmentSystem role={role} />
-      )}
-    </div>
+     <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginForm />} />
+        
+        <Route path="/admin" element={<AssessmentSystem role="admin" />} />
+            <Route path="/student" element={<AssessmentSystem role="student" />} />
+
+      </Routes>
+    </BrowserRouter>
   );
 }
 

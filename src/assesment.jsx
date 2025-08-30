@@ -15,7 +15,7 @@ import {
   Settings,
   Check,
 } from "lucide-react";
-import { collection, addDoc, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, addDoc} from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 

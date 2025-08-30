@@ -22,7 +22,10 @@ import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc ,arrayUnion   } fro
 import { db   } from "./firebaseConfig";
 
 const AssessmentSystem = () => {
-  const [currentUser, setCurrentUser] = useState("admin");
+  // const [currentUser, setCurrentUser] = useState("admin");
+    const [currentStudent, setCurrentStudent] = useState(null); // store full user object
+  const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
+
 
 
 const [assessments, setAssessments] = useState([]); // start empty
@@ -107,7 +110,7 @@ const fetchAssessments = async () => {
         });
       }
     });
- const currentStudentId = "demo-student-123"; // replace with actual student id
+ const currentStudentId = currentStudent.id; // replace with actual student id
 
     const submitted = {};
     list.forEach((assessment) => {
@@ -128,9 +131,21 @@ const fetchAssessments = async () => {
   }
 };
 useEffect(() => {
-  fetchAssessments(); // fetch all assessments when component loads
-}, []);
+  const role = JSON.parse(localStorage.getItem("role"));
+    console.log("Stored user on useEffect:",role);
 
+  const storedUser = JSON.parse(localStorage.getItem("currentUser"));
+  console.log("Stored user on load:", storedUser.email);
+
+  setCurrentStudent(storedUser);
+  setCurrentUser(role);
+   setCurrentView("dashboard");
+  console.log("Stored user on load:", storedUser.id);
+
+    console.log("Admin detected on load, fetching assessments...");
+    fetchAssessments(); // fetch assessments only if admin
+
+}, []);
 
   const createAssessment = async() => {
       console.log("create assessment clicked");
@@ -1277,7 +1292,7 @@ const addQuestion = async (assessmentId) => {
   const submission = {
     submittedAt: new Date().toISOString(),
     answers: finalAnswers,
-    studentId: "demo-student-123", // replace with actual student ID
+    studentId: currentStudent.id, // replace with actual student ID
   };
 
   console.log("🔹 Submission object:", submission);
