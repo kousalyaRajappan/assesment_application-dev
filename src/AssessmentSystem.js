@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect,useCallback } from "react";
 import {
   Calendar,
   Clock,
@@ -76,32 +76,28 @@ const navigate = useNavigate();
       description: "Image file",
     },
   ];
-  const fetchAssessments = async () => {
+
+  const fetchAssessments = useCallback(async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "assessments"));
       const list = querySnapshot.docs.map((doc) => {
         const data = doc.data();
-
         return {
-          firebaseId: doc.id, // Firestore auto-generated ID
+          firebaseId: doc.id,
           ...data,
-          // Convert questions map → array
           questions: data.questions ? Object.values(data.questions) : [],
           submissions: data.submissions || [],
-
         };
       });
 
       setAssessments(list);
 
-      // Build initial answers (optional)
+      // Build initial answers
       const initialAnswers = {};
-
       list.forEach((assessment) => {
         if (Array.isArray(assessment.questions)) {
           assessment.questions.forEach((q) => {
             if (!initialAnswers[q.id]) initialAnswers[q.id] = {};
-
             if (Array.isArray(q.answerTypes)) {
               q.answerTypes.forEach((type) => {
                 initialAnswers[q.id][type] = q.response?.[type] || "";
@@ -112,14 +108,12 @@ const navigate = useNavigate();
           });
         }
       });
+
       let currentStudentId;
-
-      if(currentUser === 'admin'){
-           currentStudentId ='demo'; // replace with actual student i
-
-      }else{
-  currentStudentId = currentStudent?.id; // student id
-
+      if (currentUser === "admin") {
+        currentStudentId = "demo";
+      } else {
+        currentStudentId = currentStudent?.id;
       }
 
       const submitted = {};
@@ -133,34 +127,33 @@ const navigate = useNavigate();
       });
 
       setStudentSubmissions(submitted);
-      // setAnswers(initialAnswers);
+
       console.log("Fetched assessments:", list);
     } catch (error) {
       console.error("Error fetching assessments:", error);
       alert("Failed to fetch assessments. Check console for details.");
     }
-  };
+  }, [currentUser, currentStudent]); // 👈 dependencies that affect fetching
+
   useEffect(() => {
     const role = JSON.parse(localStorage.getItem("role"));
-
     const storedUser = JSON.parse(localStorage.getItem("currentUser"));
 
     setCurrentStudent(storedUser);
     setCurrentUser(role);
     setCurrentView("dashboard");
-    if (role === 'admin') {
+
+    if (role === "admin") {
       fetchAssessments();
     }
+  }, [fetchAssessments]);
 
-  }, []);
-
-  // Only fetch assessments when currentStudent is loaded
   useEffect(() => {
     if (currentStudent?.id) {
       console.log("Fetching assessments for student:", currentStudent.id);
       fetchAssessments();
     }
-  }, [currentStudent]);
+  }, [currentStudent, fetchAssessments]);
 
   const createAssessment = async () => {
     console.log("create assessment clicked");
