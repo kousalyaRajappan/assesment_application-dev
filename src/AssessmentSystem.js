@@ -16,8 +16,11 @@ import {
   Check,
 } from "lucide-react";
 
-import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc   } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { collection, addDoc,getDocs ,deleteDoc,doc,updateDoc ,arrayUnion   } from "firebase/firestore";
+import {  ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+
+import { db,storage   } from "./firebaseConfig";
 
 const AssessmentSystem = () => {
   const [currentUser, setCurrentUser] = useState("admin");
@@ -36,10 +39,14 @@ const [assessments, setAssessments] = useState([]); // start empty
   const dateRef = useRef();
   const timeRef = useRef();
   const durationRef = useRef();
+    const questionRef = useRef();
+
 
   // State for question form
   const [selectedAnswerTypes, setSelectedAnswerTypes] =useState([]);
-const [questionText, setQuestionText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+// const [questionText, setQuestionText] = useState("");
 
   const answerTypes = [
     {
@@ -82,6 +89,8 @@ const fetchAssessments = async () => {
         ...data,
         // Convert questions map → array
         questions: data.questions ? Object.values(data.questions) : [],
+       submissions: data.submissions || [],
+
       };
     });
 
@@ -105,7 +114,19 @@ const fetchAssessments = async () => {
         });
       }
     });
+ const currentStudentId = "demo-student-123"; // replace with actual student id
 
+    const submitted = {};
+    list.forEach((assessment) => {
+      const hasSubmitted = assessment.submissions?.some(
+        (s) => s.studentId === currentStudentId
+      );
+      if (hasSubmitted) {
+        submitted[assessment.id] = true;
+      }
+    });
+
+    setStudentSubmissions(submitted);
     // setAnswers(initialAnswers);
     console.log("Fetched assessments:", list);
   } catch (error) {
@@ -116,6 +137,21 @@ const fetchAssessments = async () => {
 useEffect(() => {
   fetchAssessments(); // fetch all assessments when component loads
 }, []);
+
+const uploadFile = async (file, folder, assessmentId, questionId) => {
+  console.log("upload file");
+
+   try {
+    const path = `${folder}/${assessmentId}/${questionId}_${file.name}`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file); // Upload file
+    const url = await getDownloadURL(storageRef); // Get public URL
+    return url;
+  } catch (err) {
+    console.error("Firebase upload error:", err);
+    throw err;
+  }
+};
   const createAssessment = async() => {
       console.log("create assessment clicked");
 
@@ -176,6 +212,9 @@ useEffect(() => {
     // setAssessments(assessments.filter((a) => a.id !== id));
   };
 const addQuestion = async (assessmentId) => {
+      const questionText = questionRef.current?.value;
+      console.log("question entered is",questionText);
+
   if (!questionText || selectedAnswerTypes.length === 0) return;
 
   const newQuestionId = Date.now(); // unique id
@@ -218,7 +257,9 @@ const addQuestion = async (assessmentId) => {
     }
 
     // Clear form
-    setQuestionText("");
+          if (questionRef.current) questionRef.current.value = "";
+
+    // setQuestionText("");
     setSelectedAnswerTypes(["text"]);
     alert("✅ Question added successfully!");
   } catch (error) {
@@ -227,25 +268,49 @@ const addQuestion = async (assessmentId) => {
   }
 };
 
-  const removeQuestion = (assessmentId, questionId) => {
+  const removeQuestion = async (assessmentId, questionId) => {
+  try {
+    // Find the assessment
+    const assessment = assessments.find((a) => a.id === assessmentId);
+    if (!assessment) return;
+
+    // Remove the question from the existing questions object/array
+    const updatedQuestions = Array.isArray(assessment.questions)
+      ? assessment.questions.filter((q) => q.id !== questionId)
+      : Object.values(assessment.questions).filter((q) => q.id !== questionId);
+
+    // If your Firestore stores questions as an object keyed by id, convert back to object
+    const updatedQuestionsObj = {};
+    updatedQuestions.forEach((q) => {
+      updatedQuestionsObj[q.id] = q;
+    });
+
+    // Update Firestore
+    const docRef = doc(db, "assessments", assessment.firebaseId);
+    await updateDoc(docRef, {
+      questions: updatedQuestionsObj,
+    });
+
+    // Update local state
     setAssessments((prev) =>
       prev.map((a) =>
-        a.id === assessmentId
-          ? {
-              ...a,
-              questions: a.questions.filter((q) => q.id !== questionId),
-            }
-          : a
+        a.id === assessmentId ? { ...a, questions: updatedQuestionsObj } : a
       )
     );
 
-    // Update selectedAssessment as well
+    // Update selectedAssessment if needed
     if (selectedAssessment && selectedAssessment.id === assessmentId) {
       setSelectedAssessment((prev) => ({
         ...prev,
-        questions: prev.questions.filter((q) => q.id !== questionId),
+        questions: updatedQuestionsObj,
       }));
     }
+
+    console.log(`Question ${questionId} removed from assessment ${assessmentId}`);
+  } catch (error) {
+    console.error("Error removing question:", error);
+    alert("❌ Could not remove question. Check console.");
+  }
   };
 
   const toggleAssessmentStatus = async(id) => {
@@ -772,7 +837,8 @@ const addQuestion = async (assessmentId) => {
                   Question Text
                 </label>
                 <textarea
-                    
+                    ref={questionRef}
+
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={4}
                   placeholder="Enter your question here..."
@@ -1101,8 +1167,8 @@ const addQuestion = async (assessmentId) => {
           setUploadedFiles((prev) => ({
             ...prev,
             [questionId]: {
-              file: file,
-              url: e.target.result,
+               file,
+              preview: e.target.result,
               name: file.name,
             },
           }));
@@ -1190,46 +1256,88 @@ const addQuestion = async (assessmentId) => {
       }
     };
 
-    const handleSubmit = () => {
-      // Clean up any active recording and playback timers before submitting
-      Object.keys(recordingTimers.current).forEach((questionId) => {
-        if (recordingTimers.current[questionId]) {
-          clearInterval(recordingTimers.current[questionId]);
-          delete recordingTimers.current[questionId];
-        }
-      });
-      Object.keys(playbackTimers.current).forEach((questionId) => {
-        if (playbackTimers.current[questionId]) {
-          clearInterval(playbackTimers.current[questionId]);
-          delete playbackTimers.current[questionId];
-        }
-      });
+  const handleSubmit = async () => {
+  console.log("🔹 Submitting assessment...");
+  setIsSubmitting(true);
 
-      // Collect all answers from refs before submitting
-      const finalAnswers = { ...answers };
-      selectedAssessment.questions.forEach((question) => {
-        const questionAnswers = { ...(finalAnswers[question.id] || {}) };
-        question.answerTypes.forEach((type) => {
-          const ref = answerRefs.current[`${question.id}_${type}`];
-          if (ref && ref.value) {
-            questionAnswers[type] = ref.value;
-          }
-        });
-        if (Object.keys(questionAnswers).length > 0) {
-          finalAnswers[question.id] = questionAnswers;
-        }
-      });
+  // Clear any active timers
+  Object.values(recordingTimers.current).forEach((timer) => clearInterval(timer));
+  Object.values(playbackTimers.current).forEach((timer) => clearInterval(timer));
+  recordingTimers.current = {};
+  playbackTimers.current = {};
 
-      setStudentSubmissions({
-        ...studentSubmissions,
-        [selectedAssessment.id]: {
-          submittedAt: new Date().toISOString(),
-          answers: finalAnswers,
-        },
-      });
-      alert("Assessment submitted successfully!");
-      setCurrentView("dashboard");
-    };
+  // Collect all answers from refs before submitting
+  const finalAnswers = { ...answers };
+
+  selectedAssessment.questions.forEach((question) => {
+    const questionAnswers = { ...(finalAnswers[question.id] || {}) };
+    question.answerTypes.forEach((type) => {
+      const ref = answerRefs.current[`${question.id}_${type}`];
+      if (ref && ref.value) {
+        questionAnswers[type] = ref.value;
+      }
+    });
+    if (Object.keys(questionAnswers).length > 0) {
+      finalAnswers[question.id] = questionAnswers;
+    }
+  });
+
+  console.log("✅ Collected answers:", finalAnswers);
+
+  // Upload images
+  for (const questionId of Object.keys(finalAnswers)) {
+    const key = questionId.toString(); // ensure string
+    console.log(`🔹 Checking for uploaded file for question ${key}`);
+    const fileData = uploadedFiles[key];
+    if (fileData?.file instanceof File) {
+      try {
+        console.log(`⬆️ Uploading image for question ${key}:`, fileData.file.name);
+        const url = await uploadFile(
+          fileData.file,
+          "images",
+          selectedAssessment.firebaseId,
+          key
+        );
+        console.log(`✅ Image uploaded, URL: ${url}`);
+        finalAnswers[key] = {
+          ...finalAnswers[key],
+          image: url,
+        };
+      } catch (err) {
+        console.error(`❌ Failed to upload image for question ${key}:`, err);
+        alert(`Failed to upload image for question ${key}`);
+      }
+    } else {
+      console.log(`ℹ️ No file to upload for question ${key}`);
+    }
+  }
+
+  // Prepare submission
+  const submission = {
+    submittedAt: new Date().toISOString(),
+    answers: finalAnswers,
+    studentId: "demo-student-123", // replace with actual student ID
+  };
+
+  console.log("🔹 Submission object:", submission);
+
+  try {
+    const docRef = doc(db, "assessments", selectedAssessment.firebaseId);
+    await updateDoc(docRef, {
+      submissions: arrayUnion(submission),
+    });
+
+    console.log("✅ Submission saved to Firestore!");
+    fetchAssessments(); // refresh list if needed
+    alert("✅ Assessment submitted successfully!");
+    setCurrentView("dashboard");
+  } catch (error) {
+    console.error("❌ Error submitting assessment:", error);
+    alert("❌ Failed to submit assessment. Check console.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
     const AnswerInputSection = ({ question, answerType }) => {
       const answerTypeInfo = answerTypes.find((t) => t.value === answerType);
@@ -1601,7 +1709,7 @@ const addQuestion = async (assessmentId) => {
                   <div>
                     <div className="mb-4">
                       <img
-                        src={uploadedFile.url}
+                        src={uploadedFile.preview}
                         alt="Uploaded"
                         className="max-h-48 mx-auto rounded-lg shadow-sm"
                       />
@@ -1745,9 +1853,11 @@ const addQuestion = async (assessmentId) => {
                 selectedAssessment.questions.length - 1 ? (
                   <button
                     onClick={handleSubmit}
+                      disabled={isSubmitting}
+
                     className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
-                    Submit Assessment
+  {isSubmitting ? "Submitting..." : "Submit Assessment"}
                   </button>
                 ) : (
                   <button
