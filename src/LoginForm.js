@@ -45,7 +45,7 @@ function LoginForm() {
       background: 'linear-gradient(135deg, #2563eb 0%, #38bdf8 100%)'
     }}>
       <iframe
-        src="/enhanced_assessment_system.html"
+        src="/assessment_management_app_v2.html"
         title="Enhanced Assessment System"
         style={{
           width: 1200,
