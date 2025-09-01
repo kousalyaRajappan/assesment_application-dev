@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +29,7 @@
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
 
@@ -59,7 +60,9 @@
             color: #555;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -68,7 +71,9 @@
             transition: border-color 0.3s;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus,
+        select:focus,
+        textarea:focus {
             border-color: #667eea;
             outline: none;
         }
@@ -166,7 +171,8 @@
         .question-card:hover {
             border-color: #667eea;
         }
- .auth-toggle {
+
+        .auth-toggle {
             text-align: center;
             margin: 20px 0;
         }
@@ -179,6 +185,7 @@
             cursor: pointer;
             font-size: 16px;
         }
+
         .question-header {
             display: flex;
             justify-content: space-between;
@@ -262,7 +269,7 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 10px 15px;
             border-radius: 8px;
@@ -403,15 +410,15 @@
             .container {
                 padding: 10px;
             }
-            
+
             .card {
                 padding: 20px;
             }
-            
+
             .nav-tabs {
                 flex-wrap: wrap;
             }
-            
+
             .question-header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -484,6 +491,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Login Section -->
@@ -492,7 +500,7 @@
                 <h1>Assessment Management System</h1>
                 <p>Comprehensive platform for creating and managing assessments</p>
             </div>
-            
+
             <div class="login-section">
                 <div class="form-group">
                     <label for="userRole">Select Role:</label>
@@ -502,19 +510,19 @@
                         <option value="student">Student</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" placeholder="Enter your username">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Password:</label>
                     <input type="password" id="password" placeholder="Enter your password">
                 </div>
-                
+
                 <button class="btn" onclick="login()" style="width: 100%;">Login</button>
-                 <div class="auth-toggle">
+                <div class="auth-toggle">
                     <p>New Student? <button onclick="showStudentRegistration()">Register with Mobile OTP</button></p>
                 </div>
             </div>
@@ -549,7 +557,8 @@
                 </div>
 
                 <div class="nav-tabs">
-                    <button class="nav-tab active" onclick="showAdminTab('create-assessment')">Create Assessment</button>
+                    <button class="nav-tab active" onclick="showAdminTab('create-assessment')">Create
+                        Assessment</button>
                     <button class="nav-tab" onclick="showAdminTab('manage-students')">Manage Students</button>
                     <button class="nav-tab" onclick="showAdminTab('manage-assessments')">Manage Assessments</button>
                     <button class="nav-tab" onclick="showAdminTab('grade-submissions')">Grade Submissions</button>
@@ -559,33 +568,38 @@
                 <!-- Create Assessment Tab -->
                 <div id="create-assessment" class="tab-content active">
                     <h3>Create New Assessment</h3>
-                    
+
                     <div class="form-group">
                         <label for="assessmentTitle">Assessment Title:</label>
                         <input type="text" id="assessmentTitle" placeholder="Enter assessment title">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="assessmentDescription">Description:</label>
-                        <textarea id="assessmentDescription" rows="3" placeholder="Enter assessment description"></textarea>
+                        <textarea id="assessmentDescription" rows="3"
+                            placeholder="Enter assessment description"></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="maxScore">Maximum Score:</label>
-                        <input type="number" id="maxScore" placeholder="Enter maximum score" value="100" style="width: 150px;">
+                        <input type="number" id="maxScore" placeholder="Enter maximum score" value="100"
+                            style="width: 150px;">
                     </div>
 
                     <!-- Simplified Schedule Section -->
                     <div class="schedule-section">
                         <h4>📅 Schedule</h4>
-                        
+
                         <!-- Quick Presets -->
                         <div class="quick-presets">
                             <label>Quick Setup:</label>
                             <div class="preset-buttons">
-                                <button type="button" class="preset-btn" onclick="setQuickPreset('now-1hour')">Now → 1 Hour</button>
-                                <button type="button" class="preset-btn" onclick="setQuickPreset('now-1day')">Now → 1 Day</button>
-                                <button type="button" class="preset-btn" onclick="setQuickPreset('tomorrow-1week')">Tomorrow → 1 Week</button>
+                                <button type="button" class="preset-btn" onclick="setQuickPreset('now-1hour')">Now → 1
+                                    Hour</button>
+                                <button type="button" class="preset-btn" onclick="setQuickPreset('now-1day')">Now → 1
+                                    Day</button>
+                                <button type="button" class="preset-btn"
+                                    onclick="setQuickPreset('tomorrow-1week')">Tomorrow → 1 Week</button>
                             </div>
                         </div>
 
@@ -595,7 +609,7 @@
                                 <label for="startDate">Start Date:</label>
                                 <input type="datetime-local" id="startDate">
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="endDate">End Date:</label>
                                 <input type="datetime-local" id="endDate">
@@ -611,27 +625,31 @@
                     <!-- Student Assignment Section -->
                     <div class="student-selection">
                         <label><strong>Assign to Students:</strong></label>
-                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Select students who can take this assessment (leave none selected for ALL students)</p>
-                        
+                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Select students who can take this
+                            assessment (leave none selected for ALL students)</p>
+
                         <div class="student-list" id="studentAssignmentList"></div>
-                        
-                        <div id="selectionSummary" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; font-weight: bold;">
+
+                        <div id="selectionSummary"
+                            style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; font-weight: bold;">
                             No students selected - assessment will be available to ALL students
                         </div>
-                        
+
                         <div style="margin-top: 10px;">
-                            <button type="button" class="btn btn-secondary" onclick="selectAllStudents()">Select All</button>
-                            <button type="button" class="btn btn-secondary" onclick="clearStudentSelection()">Clear All</button>
+                            <button type="button" class="btn btn-secondary" onclick="selectAllStudents()">Select
+                                All</button>
+                            <button type="button" class="btn btn-secondary" onclick="clearStudentSelection()">Clear
+                                All</button>
                         </div>
                     </div>
-                    
+
                     <button class="btn" onclick="createAssessment()">Create Assessment</button>
                 </div>
 
                 <!-- Manage Students Tab -->
                 <div id="manage-students" class="tab-content">
                     <h3>Manage Students</h3>
-                    
+
                     <div class="form-group">
                         <label for="newStudentName">Add New Student:</label>
                         <div style="display: flex; gap: 10px;">
@@ -639,7 +657,7 @@
                             <button class="btn" onclick="addStudent()">Add Student</button>
                         </div>
                     </div>
-                    
+
                     <div id="studentsList"></div>
                 </div>
 
@@ -678,7 +696,8 @@
                 </div>
 
                 <div class="nav-tabs">
-                    <button class="nav-tab active" onclick="showStudentTab('available-assessments')">Available Assessments</button>
+                    <button class="nav-tab active" onclick="showStudentTab('available-assessments')">Available
+                        Assessments</button>
                     <button class="nav-tab" onclick="showStudentTab('my-submissions')">My Submissions</button>
                     <button class="nav-tab" onclick="showStudentTab('results')">Results</button>
                 </div>
@@ -708,23 +727,30 @@
     </div>
 
     <!-- Question Creation Modal -->
-    <div id="questionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 700px; max-height: 90%; overflow-y: auto;">
+    <div id="questionModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 700px; max-height: 90%; overflow-y: auto;">
             <h3>Add Question to Assessment</h3>
-            
+
             <div class="form-group">
                 <label for="questionText">Question:</label>
                 <textarea id="questionText" rows="3" placeholder="Enter your question"></textarea>
             </div>
-            
+
             <div class="form-group">
                 <label><strong>Answer Types (Select one or more):</strong></label>
                 <div class="answer-type-group">
-                    <div class="answer-type-item" data-type="text" onclick="toggleAnswerType('text')">📝 Text Answer</div>
-                    <div class="answer-type-item" data-type="file" onclick="toggleAnswerType('file')">📎 File Upload</div>
-                    <div class="answer-type-item" data-type="url" onclick="toggleAnswerType('url')">🔗 GitHub/GitLab Link</div>
-                    <div class="answer-type-item" data-type="voice" onclick="toggleAnswerType('voice')">🎤 Voice Recording</div>
-                    <div class="answer-type-item" data-type="code" onclick="toggleAnswerType('code')">💻 Code Snippet</div>
+                    <div class="answer-type-item" data-type="text" onclick="toggleAnswerType('text')">📝 Text Answer
+                    </div>
+                    <div class="answer-type-item" data-type="file" onclick="toggleAnswerType('file')">📎 File Upload
+                    </div>
+                    <div class="answer-type-item" data-type="url" onclick="toggleAnswerType('url')">🔗 GitHub/GitLab
+                        Link</div>
+                    <div class="answer-type-item" data-type="voice" onclick="toggleAnswerType('voice')">🎤 Voice
+                        Recording</div>
+                    <div class="answer-type-item" data-type="code" onclick="toggleAnswerType('code')">💻 Code Snippet
+                    </div>
                 </div>
             </div>
 
@@ -737,21 +763,23 @@
                         <div class="text-limit-item" data-limit="100" onclick="selectTextLimit(100)">Min 100 chars</div>
                         <div class="text-limit-item" data-limit="200" onclick="selectTextLimit(200)">Min 200 chars</div>
                         <div class="text-limit-item" data-limit="500" onclick="selectTextLimit(500)">Min 500 chars</div>
-                        <div class="text-limit-item" data-limit="1000" onclick="selectTextLimit(1000)">Min 1000 chars</div>
+                        <div class="text-limit-item" data-limit="1000" onclick="selectTextLimit(1000)">Min 1000 chars
+                        </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label for="questionPoints">Points:</label>
                 <input type="number" id="questionPoints" placeholder="Points for this question" value="10">
             </div>
-            
+
             <div class="form-group">
                 <label for="questionInstructions">Additional Instructions:</label>
-                <textarea id="questionInstructions" rows="2" placeholder="Any specific instructions for this question"></textarea>
+                <textarea id="questionInstructions" rows="2"
+                    placeholder="Any specific instructions for this question"></textarea>
             </div>
-            
+
             <div style="text-align: right; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="closeQuestionModal()">Cancel</button>
                 <button class="btn" onclick="addQuestion()">Add Question</button>
@@ -760,8 +788,10 @@
     </div>
 
     <!-- Assessment Taking Modal -->
-    <div id="assessmentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 95%; max-width: 900px; max-height: 90%; overflow-y: auto;">
+    <div id="assessmentModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+        <div
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; width: 95%; max-width: 900px; max-height: 90%; overflow-y: auto;">
             <div id="assessmentContent"></div>
         </div>
     </div>
@@ -782,7 +812,7 @@
             // Clear any existing data first
             assessments = [];
             submissions = [];
-            
+
             // Create a sample assessment that's available to ALL students
             assessments.push({
                 id: 'assessment_demo_' + Date.now(),
@@ -819,7 +849,7 @@
                     }
                 ]
             });
-            
+
             console.log('Sample data initialized - Assessment available to ALL students');
             console.log('Demo assessment created:', assessments[0]);
         }
@@ -836,15 +866,50 @@
             }
 
             currentUser = { username, role };
-            document.getElementById('loginSection').style.display = 'none';
-            
+            // document.getElementById('loginSection').style.display = 'none';
+
             if (role === 'admin') {
-                document.getElementById('adminDashboard').classList.add('active');
-                loadAdminDashboard();
+                if (username == 'admin' && password === 'admin@123') {
+                    document.getElementById('loginSection').style.display = 'none';
+
+                    window.parent.postMessage({ type: "LOGIN_SUCCESS", role, username }, "*");
+                } else {
+                    alert('Invalid Credentials');
+                    window.parent.postMessage({ type: "LOGIN_FAILED" }, "*"); // ✅ notify parent
+
+                }
+
+                // document.getElementById('adminDashboard').classList.add('active');
+                // loadAdminDashboard();
+            } if (role === 'student') {
+                // Query Firebase for student
+                db.collection('students')
+                    .where('email', '==', username)
+                    .where('password', '==', password)
+                    .get()
+                    .then((snapshot) => {
+                        if (snapshot.empty) {
+                            alert('Invalid student credentials');
+                            window.parent.postMessage({ type: "LOGIN_FAILED" }, "*"); // ✅ notify parent
+
+                        } else {
+                            document.getElementById('loginSection').style.display = 'none';
+                            const studentData = snapshot.docs[0].data();
+                            currentUser = { username, role, profile: studentData };
+                            window.parent.postMessage({
+                                type: "LOGIN_SUCCESS",
+                                role: "student",
+                                student: studentData
+                            }, "*");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error fetching student:', error);
+                        alert('Something went wrong. Please try again.');
+                    });
             } else {
-                document.getElementById('studentDashboard').classList.add('active');
-                document.getElementById('studentName').textContent = username;
-                loadStudentDashboard();
+                alert('Invalid role selected');
+
             }
         }
 
@@ -855,7 +920,7 @@
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('adminDashboard').classList.remove('active');
             document.getElementById('studentDashboard').classList.remove('active');
-            
+
             // Clear form
             document.getElementById('userRole').value = '';
             document.getElementById('username').value = '';
@@ -866,11 +931,11 @@
         function showAdminTab(tabName) {
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
+
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
-            
-            switch(tabName) {
+
+            switch (tabName) {
                 case 'create-assessment':
                     loadStudentAssignmentList();
                     updateSelectionSummary();
@@ -899,7 +964,7 @@
 
         function updateAdminStats() {
             document.getElementById('totalAssessments').textContent = assessments.length;
-            document.getElementById('totalQuestions').textContent = 
+            document.getElementById('totalQuestions').textContent =
                 assessments.reduce((sum, assessment) => sum + (assessment.questions ? assessment.questions.length : 0), 0);
             document.getElementById('totalSubmissions').textContent = submissions.length;
             document.getElementById('totalStudents').textContent = students.length;
@@ -912,7 +977,7 @@
                 console.error('Student assignment container not found!');
                 return;
             }
-            
+
             container.innerHTML = '';
             console.log('Available students:', students);
 
@@ -926,35 +991,35 @@
                 studentItem.className = 'student-item';
                 studentItem.textContent = student;
                 studentItem.setAttribute('data-student', student);
-                
+
                 // Add click handler with better event binding
-                studentItem.addEventListener('click', function() {
+                studentItem.addEventListener('click', function () {
                     console.log('Student clicked:', student);
                     toggleStudentSelection(student);
                 });
-                
+
                 container.appendChild(studentItem);
             });
-            
+
             console.log('Student assignment list loaded with', students.length, 'students');
         }
 
         function toggleStudentSelection(studentName) {
             console.log('Toggling selection for student:', studentName);
-            
+
             // Use more specific selector to avoid conflicts
             const item = document.querySelector(`#studentAssignmentList [data-student="${studentName}"]`);
-            
+
             if (!item) {
                 console.error('Student item not found:', studentName);
                 return;
             }
-            
+
             item.classList.toggle('selected');
-            
+
             const isSelected = item.classList.contains('selected');
             console.log('Student', studentName, 'is now', isSelected ? 'selected' : 'unselected');
-            
+
             // Update visual feedback
             updateSelectionSummary();
         }
@@ -962,7 +1027,7 @@
         function updateSelectionSummary() {
             const selectedStudents = getSelectedStudents();
             const summaryElement = document.getElementById('selectionSummary');
-            
+
             if (summaryElement) {
                 if (selectedStudents.length === 0) {
                     summaryElement.textContent = 'No students selected - assessment will be available to ALL students';
@@ -1024,14 +1089,14 @@
             students.forEach(student => {
                 const studentCard = document.createElement('div');
                 studentCard.className = 'question-card';
-                
+
                 studentCard.innerHTML = `
                     <div class="question-header">
                         <h4>${student}</h4>
                         <button class="btn btn-danger" onclick="removeStudent('${student}')">Remove</button>
                     </div>
                 `;
-                
+
                 container.appendChild(studentCard);
             });
         }
@@ -1048,12 +1113,12 @@
         function testStudentSelection() {
             console.log('=== TESTING STUDENT SELECTION ===');
             const selectedStudents = getSelectedStudents();
-            
+
             let testInfo = `STUDENT SELECTION TEST:\n\n`;
             testInfo += `Total Students Available: ${students.length}\n`;
             testInfo += `Students: ${students.join(', ')}\n\n`;
             testInfo += `Selected Students: ${selectedStudents.length}\n`;
-            
+
             if (selectedStudents.length > 0) {
                 testInfo += `Selected: ${selectedStudents.join(', ')}\n\n`;
                 testInfo += `Assessment Assignment: SPECIFIC STUDENTS\n`;
@@ -1063,13 +1128,13 @@
                 testInfo += `Assessment Assignment: ALL STUDENTS\n`;
                 testInfo += `Any student who logs in will see the assessment.`;
             }
-            
+
             alert(testInfo);
         }
 
         function createAssessment() {
             console.log('=== CREATING ASSESSMENT WITH ENHANCED VALIDATION ===');
-            
+
             const title = document.getElementById('assessmentTitle').value.trim();
             const description = document.getElementById('assessmentDescription').value.trim();
             const startDate = document.getElementById('startDate').value;
@@ -1145,46 +1210,46 @@
             console.log('Creating assessment:', assessment);
             assessments.push(assessment);
             currentAssessmentId = assessment.id;
-            
+
             // Clear form with better UX
             document.getElementById('assessmentTitle').value = '';
             document.getElementById('assessmentDescription').value = '';
             document.getElementById('maxScore').value = '100';
             clearStudentSelection();
-            
+
             // Reset to smart defaults
             setSmartDefaults();
-            
+
             // Remove active preset selection
             document.querySelectorAll('.preset-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
+
             updateAdminStats();
-            
+
             // Enhanced success message with timing info
             const startTime = new Date(startDate).toLocaleString();
             const endTime = new Date(endDate).toLocaleString();
             const durationDays = Math.floor(duration / (1000 * 60 * 60 * 24));
             const durationHours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            
+
             let durationText = '';
             if (durationDays > 0) durationText += `${durationDays} day${durationDays > 1 ? 's' : ''} `;
             if (durationHours > 0) durationText += `${durationHours} hour${durationHours > 1 ? 's' : ''}`;
-            
+
             const successMessage = `✨ Assessment "${title}" created successfully! ✨\n\n` +
-                                 `📅 Schedule:\n` +
-                                 `• Start: ${startTime}\n` +
-                                 `• End: ${endTime}\n` +
-                                 `• Duration: ${durationText}\n\n` +
-                                 `👥 Assignment: ${assignmentType}\n` +
-                                 (assignmentType === 'SPECIFIC STUDENTS' ? 
-                                  `Students: ${finalAssignedStudents.join(', ')}\n\n` : 
-                                  'Available to all students\n\n') +
-                                 `🎯 Next Step: Add questions to your assessment`;
-            
+                `📅 Schedule:\n` +
+                `• Start: ${startTime}\n` +
+                `• End: ${endTime}\n` +
+                `• Duration: ${durationText}\n\n` +
+                `👥 Assignment: ${assignmentType}\n` +
+                (assignmentType === 'SPECIFIC STUDENTS' ?
+                    `Students: ${finalAssignedStudents.join(', ')}\n\n` :
+                    'Available to all students\n\n') +
+                `🎯 Next Step: Add questions to your assessment`;
+
             alert(successMessage);
-            
+
             // Auto-switch to manage assessments tab
             setTimeout(() => {
                 showAdminTab('manage-assessments');
@@ -1194,7 +1259,7 @@
         function toggleAnswerType(type) {
             const item = document.querySelector(`[data-type="${type}"]`);
             item.classList.toggle('selected');
-            
+
             if (selectedAnswerTypes.includes(type)) {
                 selectedAnswerTypes = selectedAnswerTypes.filter(t => t !== type);
             } else {
@@ -1226,7 +1291,7 @@
             console.log('Loading assessments list...');
             const container = document.getElementById('assessmentsList');
             container.innerHTML = '';
-            
+
             console.log('Total assessments to display:', assessments.length);
 
             if (assessments.length === 0) {
@@ -1242,17 +1307,17 @@
 
             assessments.forEach((assessment, index) => {
                 console.log(`Rendering assessment ${index + 1}:`, assessment.title);
-                
+
                 const assessmentCard = document.createElement('div');
                 assessmentCard.className = 'question-card';
-                
+
                 const now = new Date();
                 const start = new Date(assessment.startDate);
                 const end = new Date(assessment.endDate);
-                
+
                 let status = 'Scheduled';
                 let statusClass = 'status-pending';
-                
+
                 if (now >= start && now <= end) {
                     status = 'Active';
                     statusClass = 'status-open';
@@ -1281,11 +1346,10 @@
                         <strong>Duration:</strong> ${new Date(assessment.startDate).toLocaleString()} - ${new Date(assessment.endDate).toLocaleString()}<br>
                         <strong>Max Score:</strong> ${assessment.maxScore} points<br>
                         <strong>Questions:</strong> ${assessment.questions ? assessment.questions.length : 0}<br>
-                        <strong>Assigned to:</strong> ${
-                            !assessment.assignedStudents || assessment.assignedStudents.length === 0 
-                            ? '<span style="color: #28a745; font-weight: bold;">ALL STUDENTS</span>' 
-                            : assessment.assignedStudents.join(', ')
-                        }
+                        <strong>Assigned to:</strong> ${!assessment.assignedStudents || assessment.assignedStudents.length === 0
+                        ? '<span style="color: #28a745; font-weight: bold;">ALL STUDENTS</span>'
+                        : assessment.assignedStudents.join(', ')
+                    }
                     </div>
                     <div style="margin-top: 15px;">
                         <button class="btn" onclick="addQuestionToAssessment('${assessment.id}')">Add Question</button>
@@ -1296,10 +1360,10 @@
                         <button class="btn btn-danger" onclick="deleteAssessment('${assessment.id}')">Delete</button>
                     </div>
                 `;
-                
+
                 container.appendChild(assessmentCard);
             });
-            
+
             console.log('Finished rendering all assessments');
         }
 
@@ -1309,9 +1373,8 @@
 
             let studentsHtml = `
                 <h3>Edit Student Assignment: ${assessment.title}</h3>
-                <p style="margin-bottom: 15px;">Current assignment: ${
-                    !assessment.assignedStudents || assessment.assignedStudents.length === 0 
-                    ? '<span style="color: #28a745; font-weight: bold;">ALL STUDENTS</span>' 
+                <p style="margin-bottom: 15px;">Current assignment: ${!assessment.assignedStudents || assessment.assignedStudents.length === 0
+                    ? '<span style="color: #28a745; font-weight: bold;">ALL STUDENTS</span>'
                     : `<span style="color: #007bff; font-weight: bold;">${assessment.assignedStudents.join(', ')}</span>`
                 }</p>
                 
@@ -1337,9 +1400,9 @@
                     </div>
                     
                     <div id="editSelectionSummary" style="margin: 10px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; font-weight: bold;">
-                        ${!assessment.assignedStudents || assessment.assignedStudents.length === 0 
-                          ? 'Available to ALL students' 
-                          : `Selected: ${assessment.assignedStudents.join(', ')}`}
+                        ${!assessment.assignedStudents || assessment.assignedStudents.length === 0
+                    ? 'Available to ALL students'
+                    : `Selected: ${assessment.assignedStudents.join(', ')}`}
                     </div>
                     
                     <div style="margin-top: 10px;">
@@ -1361,7 +1424,7 @@
                 </div>
             `;
             document.body.appendChild(modal);
-            
+
             // Update the summary immediately
             updateEditSelectionSummary();
         }
@@ -1392,7 +1455,7 @@
             const selectedItems = document.querySelectorAll('#editStudentList .student-item.selected');
             const selectedStudents = Array.from(selectedItems).map(item => item.getAttribute('data-student'));
             const summaryElement = document.getElementById('editSelectionSummary');
-            
+
             if (summaryElement) {
                 if (selectedStudents.length === 0) {
                     summaryElement.textContent = 'Available to ALL students';
@@ -1408,10 +1471,10 @@
             const assessment = assessments.find(a => a.id === assessmentId);
             const selectedItems = document.querySelectorAll('#editStudentList .student-item.selected');
             const selectedStudents = Array.from(selectedItems).map(item => item.getAttribute('data-student'));
-            
+
             console.log('Saving assignment for assessment:', assessmentId);
             console.log('Selected students:', selectedStudents);
-            
+
             // Set assignment
             if (selectedStudents.length === 0) {
                 assessment.assignedStudents = []; // Empty array = all students
@@ -1420,7 +1483,7 @@
                 assessment.assignedStudents = selectedStudents;
                 alert(`Assessment "${assessment.title}" is now assigned to: ${selectedStudents.join(', ')}`);
             }
-            
+
             document.body.lastElementChild.remove();
             loadAssessmentsList();
         }
@@ -1434,12 +1497,12 @@
 
         function closeQuestionModal() {
             document.getElementById('questionModal').style.display = 'none';
-            
+
             // Clear form
             document.getElementById('questionText').value = '';
             document.getElementById('questionPoints').value = '10';
             document.getElementById('questionInstructions').value = '';
-            
+
             // Clear selections
             selectedAnswerTypes = [];
             selectedTextLimit = null;
@@ -1538,43 +1601,43 @@
 
         function activateAssessmentNow(assessmentId) {
             console.log('Activate Now clicked for assessment:', assessmentId);
-            
+
             const assessment = assessments.find(a => a.id === assessmentId);
             if (!assessment) {
                 console.error('Assessment not found:', assessmentId);
                 alert('Error: Assessment not found!');
                 return;
             }
-            
+
             const now = new Date();
             const currentStart = new Date(assessment.startDate);
             const currentEnd = new Date(assessment.endDate);
-            
+
             console.log('Current timing:', {
                 now: now.toLocaleString(),
                 start: currentStart.toLocaleString(),
                 end: currentEnd.toLocaleString()
             });
-            
+
             if (now >= currentStart && now <= currentEnd) {
                 alert(`Assessment "${assessment.title}" is already active!\n\nStart: ${currentStart.toLocaleString()}\nEnd: ${currentEnd.toLocaleString()}\nCurrent: ${now.toLocaleString()}`);
                 return;
             }
-            
+
             if (confirm(`Activate "${assessment.title}" immediately?\n\nThis will:\n• Set start time to NOW\n• Keep the same end time\n• Make it available to students immediately`)) {
                 console.log('User confirmed activation');
-                
+
                 // Set start time to now (1 minute ago to ensure it's definitely active)
                 assessment.startDate = new Date(now.getTime() - 60000).toISOString();
-                
+
                 console.log('New timing:', {
                     start: new Date(assessment.startDate).toLocaleString(),
                     end: new Date(assessment.endDate).toLocaleString()
                 });
-                
+
                 // Update the UI
                 loadAssessmentsList();
-                
+
                 alert(`✅ Assessment "${assessment.title}" is now ACTIVE!\n\nStudents can immediately start taking this assessment.\n\nNew start time: ${new Date(assessment.startDate).toLocaleString()}`);
                 console.log('Assessment activation completed');
             } else {
@@ -1584,16 +1647,16 @@
 
         function assignToAllStudents(assessmentId) {
             console.log('Assign to All Students clicked for assessment:', assessmentId);
-            
+
             const assessment = assessments.find(a => a.id === assessmentId);
             if (!assessment) {
                 console.error('Assessment not found:', assessmentId);
                 alert('Error: Assessment not found!');
                 return;
             }
-            
+
             console.log('Current assignment:', assessment.assignedStudents);
-            
+
             // Create a custom confirmation modal instead of using browser confirm()
             showAssignAllStudentsConfirmation(assessmentId, assessment.title, assessment.assignedStudents);
         }
@@ -1610,9 +1673,9 @@
                         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
                             <p style="margin: 0; font-weight: bold; color: #155724;">Current Assignment:</p>
                             <p style="margin: 5px 0; color: #721c24;">
-                                ${currentAssignment && currentAssignment.length > 0 ? 
-                                  `Specific students: ${currentAssignment.join(', ')}` : 
-                                  'Already assigned to all students'}
+                                ${currentAssignment && currentAssignment.length > 0 ?
+                    `Specific students: ${currentAssignment.join(', ')}` :
+                    'Already assigned to all students'}
                             </p>
                             <p style="margin: 10px 0 0 0; font-weight: bold; color: #155724;">After Change:</p>
                             <p style="margin: 5px 0; color: #155724;">
@@ -1626,7 +1689,7 @@
                     </div>
                 </div>
             `;
-            
+
             // Add modal to page
             const modal = document.createElement('div');
             modal.id = 'assignAllStudentsModal';
@@ -1644,13 +1707,13 @@
 
         function confirmAssignAllStudents(assessmentId, assessmentTitle) {
             console.log('User confirmed assignment to all students, proceeding...');
-            
+
             // Remove the confirmation modal
             const modal = document.getElementById('assignAllStudentsModal');
             if (modal) {
                 modal.remove();
             }
-            
+
             try {
                 const assessment = assessments.find(a => a.id === assessmentId);
                 if (!assessment) {
@@ -1658,20 +1721,20 @@
                     alert('Error: Assessment not found!');
                     return;
                 }
-                
+
                 console.log('Before assignment - current assignment:', assessment.assignedStudents);
-                
+
                 // Set to empty array to indicate all students
                 assessment.assignedStudents = [];
-                
+
                 console.log('After assignment - new assignment:', assessment.assignedStudents);
-                
+
                 // Update the UI
                 loadAssessmentsList();
-                
+
                 alert(`✅ Assessment "${assessmentTitle}" is now available to ALL students!\n\nAny student who logs in can now see and take this assessment.`);
                 console.log('Assignment to all students completed successfully');
-                
+
             } catch (error) {
                 console.error('Error during assignment to all students:', error);
                 alert('❌ An error occurred while assigning to all students. Please try again.');
@@ -1692,14 +1755,14 @@
 
         function testAssignmentButtons() {
             console.log('=== TESTING ASSIGNMENT BUTTONS ===');
-            
+
             let testInfo = `ASSIGNMENT BUTTON TEST:\n\n`;
             testInfo += `Total Assessments: ${assessments.length}\n\n`;
-            
+
             assessments.forEach((assessment, index) => {
                 testInfo += `${index + 1}. "${assessment.title}"\n`;
                 testInfo += `   ID: ${assessment.id}\n`;
-                
+
                 if (!assessment.assignedStudents || assessment.assignedStudents.length === 0) {
                     testInfo += `   Assignment: ALL STUDENTS\n`;
                     testInfo += `   Button: "Assign to Specific Students"\n`;
@@ -1710,7 +1773,7 @@
                 }
                 testInfo += `\n`;
             });
-            
+
             alert(testInfo);
         }
 
@@ -1722,13 +1785,13 @@
             console.log('Submissions array:', submissions);
             console.log('Current user:', currentUser);
             console.log('Students list:', students);
-            
+
             let debugInfo = `ADMIN DEBUG INFORMATION:\n\n`;
             debugInfo += `Total Assessments: ${assessments.length}\n`;
             debugInfo += `Total Submissions: ${submissions.length}\n`;
             debugInfo += `Current User: ${currentUser ? currentUser.username : 'None'}\n`;
             debugInfo += `Total Students: ${students.length}\n\n`;
-            
+
             if (assessments.length > 0) {
                 debugInfo += `Assessment Details:\n`;
                 assessments.forEach((assessment, index) => {
@@ -1742,23 +1805,23 @@
                     }
                 });
             }
-            
+
             alert(debugInfo);
         }
 
         function clearAndReload() {
             console.log('=== CLEARING AND RELOADING DATA ===');
-            
+
             // Clear all data and reinitialize
             assessments = [];
             submissions = [];
-            
+
             // Reinitialize sample data
             initializeSampleData();
-            
+
             // Reload assessments
             loadStudentAssessments();
-            
+
             alert('Data cleared and reloaded! You should now see the demo assessment.');
         }
 
@@ -1771,29 +1834,29 @@
         function checkAssessmentTiming() {
             console.log('=== ASSESSMENT TIMING CHECK ===');
             const now = new Date();
-            
+
             let timingInfo = `ASSESSMENT TIMING INFORMATION:\n\n`;
             timingInfo += `Current Time: ${now.toLocaleString()}\n\n`;
-            
+
             if (assessments.length === 0) {
                 timingInfo += `No assessments found in the system.`;
                 alert(timingInfo);
                 return;
             }
-            
+
             assessments.forEach((assessment, index) => {
                 const start = new Date(assessment.startDate);
                 const end = new Date(assessment.endDate);
-                
+
                 timingInfo += `${index + 1}. "${assessment.title}"\n`;
                 timingInfo += `   Start: ${start.toLocaleString()}\n`;
                 timingInfo += `   End: ${end.toLocaleString()}\n`;
-                
+
                 if (now < start) {
                     const timeUntilStart = start - now;
                     const minutesUntilStart = Math.ceil(timeUntilStart / (1000 * 60));
                     const hoursUntilStart = Math.floor(minutesUntilStart / 60);
-                    
+
                     if (hoursUntilStart > 0) {
                         timingInfo += `   Status: ⏳ Starts in ${hoursUntilStart}h ${minutesUntilStart % 60}m\n`;
                     } else {
@@ -1809,36 +1872,36 @@
                 }
                 timingInfo += `\n`;
             });
-            
+
             // Check if student can see any assessments
             const myAssessments = assessments.filter(assessment => {
-                return !assessment.assignedStudents || 
-                       assessment.assignedStudents.length === 0 || 
-                       assessment.assignedStudents.includes(currentUser.username);
+                return !assessment.assignedStudents ||
+                    assessment.assignedStudents.length === 0 ||
+                    assessment.assignedStudents.includes(currentUser.username);
             });
-            
+
             timingInfo += `\n📊 SUMMARY:\n`;
             timingInfo += `Total assessments in system: ${assessments.length}\n`;
             timingInfo += `Assessments you can see: ${myAssessments.length}\n`;
-            
+
             const activeAssessments = myAssessments.filter(a => {
                 const start = new Date(a.startDate);
                 const end = new Date(a.endDate);
                 return now >= start && now <= end;
             });
-            
+
             timingInfo += `Active assessments you can take: ${activeAssessments.length}\n`;
-            
+
             if (activeAssessments.length === 0 && myAssessments.length > 0) {
                 timingInfo += `\n💡 TIP: All your assessments are either not started yet or have ended. Ask admin to adjust timing.`;
             }
-            
+
             alert(timingInfo);
         }
 
         function createTestAssessment() {
             console.log('Creating test assessment for current student...');
-            
+
             const testAssessment = {
                 id: 'test_assessment_' + Date.now(),
                 title: `Test Assessment for ${currentUser.username}`,
@@ -1866,10 +1929,10 @@
                     }
                 ]
             };
-            
+
             assessments.push(testAssessment);
             loadStudentAssessments();
-            
+
             alert(`✅ Created test assessment "${testAssessment.title}"!\n\nThis assessment is ACTIVE NOW and available to ALL students.`);
         }
 
@@ -1878,22 +1941,22 @@
             console.log('Current student username:', currentUser.username);
             console.log('Total assessments available:', assessments.length);
             console.log('Students list:', students);
-            
+
             let debugInfo = `STUDENT DEBUG INFORMATION:\n\n`;
             debugInfo += `Your Username: "${currentUser.username}"\n`;
             debugInfo += `Total Assessments in System: ${assessments.length}\n\n`;
-            
+
             if (assessments.length > 0) {
                 debugInfo += `Assessment Details:\n`;
                 assessments.forEach((assessment, index) => {
                     debugInfo += `${index + 1}. "${assessment.title}"\n`;
-                    
+
                     if (!assessment.assignedStudents || assessment.assignedStudents.length === 0) {
                         debugInfo += `   ✅ Available to ALL students\n`;
                         debugInfo += `   → You SHOULD see this assessment\n`;
                     } else {
                         debugInfo += `   👥 Assigned to specific students: ${assessment.assignedStudents.join(', ')}\n`;
-                        
+
                         // Check if current user is in the list
                         if (assessment.assignedStudents.includes(currentUser.username)) {
                             debugInfo += `   ✅ You ARE assigned to this assessment\n`;
@@ -1906,7 +1969,7 @@
                     }
                     debugInfo += `\n`;
                 });
-                
+
                 debugInfo += `\n💡 SOLUTIONS:\n`;
                 debugInfo += `1. Login as a matching username above\n`;
                 debugInfo += `2. Ask admin to "Assign to All Students"\n`;
@@ -1915,13 +1978,13 @@
                 debugInfo += `No assessments found in the system.\n`;
                 debugInfo += `Ask an administrator to create assessments.`;
             }
-            
+
             alert(debugInfo);
         }
 
         function deleteAssessment(assessmentId) {
             console.log('Delete button clicked for assessment:', assessmentId);
-            
+
             // Find the assessment to get its title
             const assessmentToDelete = assessments.find(a => a.id === assessmentId);
             if (!assessmentToDelete) {
@@ -1932,7 +1995,7 @@
 
             const assessmentTitle = assessmentToDelete.title;
             console.log('Found assessment to delete:', assessmentTitle);
-            
+
             // Create a custom confirmation modal instead of using browser confirm()
             showDeleteConfirmation(assessmentId, assessmentTitle);
         }
@@ -1963,7 +2026,7 @@
                     </div>
                 </div>
             `;
-            
+
             // Add modal to page
             const modal = document.createElement('div');
             modal.id = 'deleteConfirmationModal';
@@ -1981,43 +2044,43 @@
 
         function confirmDelete(assessmentId, assessmentTitle) {
             console.log('User confirmed deletion, proceeding...');
-            
+
             // Remove the confirmation modal
             const modal = document.getElementById('deleteConfirmationModal');
             if (modal) {
                 modal.remove();
             }
-            
+
             try {
                 // Remove assessment
                 const originalLength = assessments.length;
                 console.log('Before deletion - assessments count:', originalLength);
-                
+
                 assessments = assessments.filter(a => a.id !== assessmentId);
-                
+
                 console.log('After deletion - assessments count:', assessments.length);
-                
+
                 if (assessments.length === originalLength) {
                     console.error('Assessment was not removed from array');
                     alert('Error: Failed to delete assessment');
                     return;
                 }
-                
+
                 console.log('Successfully removed assessment from array');
-                
+
                 // Remove related submissions
                 const originalSubmissions = submissions.length;
                 submissions = submissions.filter(s => s.assessmentId !== assessmentId);
                 console.log('Submissions: was', originalSubmissions, 'now', submissions.length);
-                
+
                 // Update UI immediately
                 updateAdminStats();
                 loadAssessmentsList();
-                
+
                 // Show success message
                 alert(`✅ Assessment "${assessmentTitle}" has been deleted successfully!`);
                 console.log('Deletion completed successfully');
-                
+
             } catch (error) {
                 console.error('Error during deletion:', error);
                 alert('❌ An error occurred while deleting the assessment. Please try again.');
@@ -2034,7 +2097,7 @@
 
             submissions.forEach((submission, index) => {
                 console.log(`Submission ${index + 1}:`, submission);
-                
+
                 const assessment = assessments.find(a => a.id === submission.assessmentId);
                 if (!assessment) {
                     console.log('Assessment not found for submission:', submission.assessmentId);
@@ -2043,10 +2106,10 @@
 
                 const submissionCard = document.createElement('div');
                 submissionCard.className = 'question-card';
-                
+
                 const answerCount = submission.answers ? Object.keys(submission.answers).length : 0;
                 const isDraft = submission.isDraft ? true : false;
-                
+
                 submissionCard.innerHTML = `
                     <div class="question-header">
                         <h4>${assessment.title} - ${submission.studentName}</h4>
@@ -2066,7 +2129,7 @@
                         <button class="btn btn-secondary" onclick="debugSubmissionAnswers('${submission.id}')">🐛 Debug Answers</button>
                     </div>
                 `;
-                
+
                 container.appendChild(submissionCard);
             });
 
@@ -2085,22 +2148,22 @@
 
         function debugSubmissionAnswers(submissionId) {
             console.log('=== DEBUGGING SUBMISSION ANSWERS ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             if (!submission) {
                 alert('❌ Submission not found!');
                 return;
             }
-            
+
             const assessment = assessments.find(a => a.id === submission.assessmentId);
-            
+
             let debugInfo = `SUBMISSION DEBUG:\n\n`;
             debugInfo += `Submission ID: ${submission.id}\n`;
             debugInfo += `Student: ${submission.studentName}\n`;
             debugInfo += `Assessment: ${assessment ? assessment.title : 'Unknown'}\n`;
             debugInfo += `Submitted: ${new Date(submission.submittedAt).toLocaleString()}\n`;
             debugInfo += `Is Draft: ${submission.isDraft ? 'Yes' : 'No'}\n\n`;
-            
+
             debugInfo += `ANSWERS DATA:\n`;
             if (submission.answers && Object.keys(submission.answers).length > 0) {
                 Object.entries(submission.answers).forEach(([questionId, answerData]) => {
@@ -2116,18 +2179,18 @@
             } else {
                 debugInfo += `❌ No answers found in submission!\n`;
             }
-            
+
             console.log('Submission details:', submission);
             alert(debugInfo);
         }
 
         function debugAllSubmissions() {
             console.log('=== DEBUGGING ALL SUBMISSIONS ===');
-            
+
             let debugInfo = `ALL SUBMISSIONS DEBUG:\n\n`;
             debugInfo += `Total Submissions: ${submissions.length}\n`;
             debugInfo += `Total Assessments: ${assessments.length}\n\n`;
-            
+
             if (submissions.length === 0) {
                 debugInfo += `No submissions found. Possible issues:\n`;
                 debugInfo += `1. Students haven't submitted anything\n`;
@@ -2141,7 +2204,7 @@
                     debugInfo += `   Draft: ${submission.isDraft ? 'Yes' : 'No'}\n\n`;
                 });
             }
-            
+
             console.log('All submissions:', submissions);
             console.log('All assessments:', assessments);
             alert(debugInfo);
@@ -2150,10 +2213,10 @@
         function gradeSubmission(submissionId) {
             console.log('=== GRADING SUBMISSION ===');
             console.log('Submission ID:', submissionId);
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             const assessment = assessments.find(a => a.id === submission.assessmentId);
-            
+
             if (!submission || !assessment) {
                 alert('❌ Submission or assessment not found');
                 return;
@@ -2163,7 +2226,7 @@
             console.log('Found assessment:', assessment);
             console.log('Submission answers:', submission.answers);
             console.log('Raw submission object:', JSON.stringify(submission, null, 2));
-            
+
             let gradingHtml = `
                 <h3>Grade Submission: ${assessment.title}</h3>
                 <p><strong>Student:</strong> ${submission.studentName}</p>
@@ -2177,23 +2240,23 @@
                 console.log(`\n--- Processing question ${questionNum}: ${question.id} ---`);
                 console.log('Question text:', question.text);
                 console.log('Question types:', question.types);
-                
+
                 // IMPROVED ANSWER RETRIEVAL - Same logic as saveProgress but for reading
                 let questionAnswers = null;
                 let foundAnswerMethod = 'none';
-                
+
                 // Method 1: Look in the correct nested format (preferred)
                 if (submission.answers && submission.answers[question.id]) {
                     questionAnswers = submission.answers[question.id];
                     foundAnswerMethod = 'nested_format';
                     console.log('✅ Found answers in nested format:', questionAnswers);
                 }
-                
+
                 // Method 2: If not found, create from flat field structure (fallback)
                 if (!questionAnswers && submission.answers) {
                     const fieldAnswers = {};
                     let foundFieldAnswers = false;
-                    
+
                     question.types.forEach(type => {
                         const fieldName = `${question.id}_${type}`;
                         if (submission.answers[fieldName]) {
@@ -2202,16 +2265,16 @@
                             console.log(`✅ Found ${type} answer in field ${fieldName}:`, submission.answers[fieldName]);
                         }
                     });
-                    
+
                     if (foundFieldAnswers) {
                         questionAnswers = fieldAnswers;
                         foundAnswerMethod = 'field_format';
                     }
                 }
-                
+
                 console.log(`Final questionAnswers for Q${questionNum}:`, questionAnswers);
                 console.log(`Answer retrieval method: ${foundAnswerMethod}`);
-                
+
                 gradingHtml += `
                     <div class="question-card">
                         <h4>Question ${questionNum} (${question.points} points)</h4>
@@ -2221,7 +2284,7 @@
                         <div class="answer-display">
                             <strong>Student Answers:</strong><br>
                 `;
-                
+
                 // Display answers based on what we found
                 if (questionAnswers && typeof questionAnswers === 'object' && Object.keys(questionAnswers).length > 0) {
                     // Multiple answer types (object format) - this is the correct format
@@ -2256,7 +2319,7 @@
                     console.log(`❌ No answer found for question ${question.id}`);
                     console.log('Available keys in submission.answers:', submission.answers ? Object.keys(submission.answers) : 'No answers object');
                 }
-                
+
                 gradingHtml += `
                         </div>
                         <div style="margin-top: 10px;">
@@ -2294,10 +2357,10 @@
 
         function formatAnswerForGrading(answer, type, label) {
             if (!answer) return `<p><strong>${label}:</strong> <em>No answer provided</em></p>`;
-            
+
             let formattedAnswer = '';
-            
-            switch(type.toLowerCase()) {
+
+            switch (type.toLowerCase()) {
                 case 'text':
                 case 'code':
                     formattedAnswer = `
@@ -2350,30 +2413,30 @@
                         </div>
                     `;
             }
-            
+
             return formattedAnswer;
         }
 
         function debugSubmissionData(submissionId) {
             console.log('=== DEBUGGING SUBMISSION DATA ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             if (!submission) {
                 alert('❌ Submission not found!');
                 return;
             }
-            
+
             let debugInfo = `DETAILED SUBMISSION DEBUG:\n\n`;
             debugInfo += `Submission ID: ${submission.id}\n`;
             debugInfo += `Student: ${submission.studentName}\n`;
             debugInfo += `Assessment ID: ${submission.assessmentId}\n`;
             debugInfo += `Submitted: ${submission.submittedAt}\n`;
             debugInfo += `Is Draft: ${submission.isDraft}\n\n`;
-            
+
             debugInfo += `RAW ANSWERS DATA:\n`;
             debugInfo += `Type: ${typeof submission.answers}\n`;
             debugInfo += `Keys: ${submission.answers ? Object.keys(submission.answers).join(', ') : 'None'}\n\n`;
-            
+
             if (submission.answers) {
                 debugInfo += `DETAILED ANSWERS:\n`;
                 Object.entries(submission.answers).forEach(([key, value]) => {
@@ -2390,44 +2453,44 @@
             } else {
                 debugInfo += `❌ No answers object found!\n`;
             }
-            
+
             console.log('Full submission object:', submission);
             alert(debugInfo);
         }
 
         function fixSubmissionAnswers(submissionId) {
             console.log('=== FIXING SUBMISSION ANSWER STRUCTURE ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             const assessment = assessments.find(a => a.id === submission.assessmentId);
-            
+
             if (!submission || !assessment) {
                 alert('❌ Submission or assessment not found!');
                 return;
             }
-            
+
             console.log('Original answers structure:', submission.answers);
-            
+
             if (!submission.answers) {
                 alert('❌ No answers found in submission to fix!');
                 return;
             }
-            
+
             // Create a new properly structured answers object
             const fixedAnswers = {};
             let changesCount = 0;
-            
+
             assessment.questions.forEach(question => {
                 console.log(`\n--- Fixing answers for question: ${question.id} ---`);
-                
+
                 // Initialize the question answers object
                 const questionAnswers = {};
                 let foundAnyAnswer = false;
-                
+
                 // Look for answers in various formats
                 question.types.forEach(type => {
                     const fieldName = `${question.id}_${type}`;
-                    
+
                     // Check if answer exists in field format
                     if (submission.answers[fieldName]) {
                         questionAnswers[type] = submission.answers[fieldName];
@@ -2443,7 +2506,7 @@
                         console.log(`✅ Found answer in direct question ID format:`, submission.answers[question.id]);
                     }
                 });
-                
+
                 // If we found answers for this question, add them to the fixed structure
                 if (foundAnyAnswer) {
                     fixedAnswers[question.id] = questionAnswers;
@@ -2452,25 +2515,25 @@
                     console.log(`⚠️ No answers found for question ${question.id}`);
                 }
             });
-            
+
             console.log('Fixed answers structure:', fixedAnswers);
             console.log('Total changes made:', changesCount);
-            
+
             if (changesCount > 0) {
                 // Update the submission with fixed structure
                 submission.answers = fixedAnswers;
                 submission.lastModified = new Date().toISOString();
-                
+
                 // Close current modal and reopen with fixed data
                 document.body.lastElementChild.remove();
-                
+
                 alert(`✅ Fixed ${changesCount} answer mappings!\n\nThe grading interface will now reload with the corrected answer structure.`);
-                
+
                 // Reopen grading modal with fixed data
                 setTimeout(() => {
                     gradeSubmission(submissionId);
                 }, 500);
-                
+
                 console.log('Answer structure fixed and grading modal reopened');
             } else {
                 alert('⚠️ No answer structure issues found to fix.\n\nThe submission may have a different issue or the answers may be missing entirely.');
@@ -2481,7 +2544,7 @@
             if (!answers || Object.keys(answers).length === 0) {
                 return 'No answers provided';
             }
-            
+
             let formattedAnswers = '';
             types.forEach(type => {
                 if (answers[type]) {
@@ -2489,14 +2552,14 @@
                     formattedAnswers += formatAnswer(answers[type], type) + '</div>';
                 }
             });
-            
+
             return formattedAnswers || 'No answers provided';
         }
 
         function formatAnswer(answer, type) {
             if (!answer) return 'No answer provided';
-            
-            switch(type) {
+
+            switch (type) {
                 case 'text':
                 case 'code':
                     return `<pre style="white-space: pre-wrap; background: #f8f9fa; padding: 10px; border-radius: 5px;">${answer}</pre>`;
@@ -2515,7 +2578,7 @@
             const submission = submissions.find(s => s.id === submissionId);
             const modal = document.body.lastElementChild;
             const scoreInputs = modal.querySelectorAll('.score-input');
-            
+
             submission.scores = {};
             let totalScore = 0;
 
@@ -2547,9 +2610,9 @@
 
                 const resultCard = document.createElement('div');
                 resultCard.className = 'question-card';
-                
+
                 const percentage = ((submission.score / assessment.maxScore) * 100).toFixed(1);
-                
+
                 resultCard.innerHTML = `
                     <div class="question-header">
                         <h4>${assessment.title} - ${submission.studentName}</h4>
@@ -2561,7 +2624,7 @@
                         <strong>Graded:</strong> ${new Date(submission.gradedAt).toLocaleString()}
                     </div>
                 `;
-                
+
                 container.appendChild(resultCard);
             });
 
@@ -2574,10 +2637,10 @@
         function showStudentTab(tabName) {
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
+
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
-            
+
             if (tabName === 'available-assessments') {
                 loadStudentAssessments();
             } else if (tabName === 'my-submissions') {
@@ -2600,33 +2663,33 @@
             console.log('Total assessments available:', assessments.length);
 
             const now = new Date();
-            
+
             // More flexible assessment filtering
             const myAssessments = assessments.filter(assessment => {
                 console.log(`\n--- Checking assessment: "${assessment.title}" ---`);
                 console.log('Assigned to:', assessment.assignedStudents);
-                
+
                 // Case 1: No assigned students (null, undefined, or empty array) = Available to ALL
                 if (!assessment.assignedStudents || assessment.assignedStudents.length === 0) {
                     console.log('✅ Assessment has no specific assignments - available to ALL students');
                     return true;
                 }
-                
+
                 // Case 2: Student is specifically assigned (exact match)
                 if (assessment.assignedStudents.includes(currentUser.username)) {
                     console.log('✅ Student is specifically assigned to this assessment');
                     return true;
                 }
-                
+
                 // Case 3: Case-insensitive matching
                 const studentName = currentUser.username.toLowerCase();
                 const assignedNames = assessment.assignedStudents.map(name => name.toLowerCase());
-                
+
                 if (assignedNames.includes(studentName)) {
                     console.log('✅ Student name matches (case-insensitive)');
                     return true;
                 }
-                
+
                 console.log('❌ Student not assigned to this assessment');
                 return false;
             });
@@ -2637,14 +2700,14 @@
             myAssessments.forEach(assessment => {
                 const start = new Date(assessment.startDate);
                 const end = new Date(assessment.endDate);
-                
+
                 const assessmentCard = document.createElement('div');
                 assessmentCard.className = 'question-card';
-                
+
                 let status = 'Scheduled';
                 let statusClass = 'status-pending';
                 let actionButton = '';
-                
+
                 // Debug timing
                 console.log(`Assessment "${assessment.title}" timing check:`);
                 console.log('Current time:', now.toLocaleString());
@@ -2652,15 +2715,15 @@
                 console.log('End time:', end.toLocaleString());
                 console.log('now >= start:', now >= start);
                 console.log('now <= end:', now <= end);
-                
+
                 if (now >= start && now <= end) {
                     status = 'Active';
                     statusClass = 'status-open';
-                    
-                    const existingSubmission = submissions.find(s => 
+
+                    const existingSubmission = submissions.find(s =>
                         s.assessmentId === assessment.id && s.studentName === currentUser.username
                     );
-                    
+
                     if (existingSubmission && !existingSubmission.isDraft) {
                         actionButton = '<span class="status-badge status-open">Submitted</span>';
                     } else if (existingSubmission && existingSubmission.isDraft) {
@@ -2676,7 +2739,7 @@
                     // Assessment hasn't started yet
                     const timeUntilStart = start - now;
                     const minutesUntilStart = Math.ceil(timeUntilStart / (1000 * 60));
-                    
+
                     if (minutesUntilStart <= 60) {
                         actionButton = `<button class="btn btn-secondary" disabled>Starts in ${minutesUntilStart} minutes</button>`;
                     } else {
@@ -2699,7 +2762,7 @@
                         ${actionButton}
                     </div>
                 `;
-                
+
                 container.appendChild(assessmentCard);
             });
 
@@ -2712,7 +2775,7 @@
                     console.log('  - Is Array?', Array.isArray(assessment.assignedStudents));
                     console.log('  - Length:', assessment.assignedStudents ? assessment.assignedStudents.length : 'N/A');
                 });
-                
+
                 container.innerHTML = `
                     <div class="question-card">
                         <h4>No Assessments Available</h4>
@@ -2745,7 +2808,7 @@
 
             const now = new Date();
             const end = new Date(assessment.endDate);
-            
+
             if (now > end) {
                 alert('This assessment has ended');
                 return;
@@ -2758,10 +2821,10 @@
 
         function editSubmission(assessmentId) {
             const assessment = assessments.find(a => a.id === assessmentId);
-            const submission = submissions.find(s => 
+            const submission = submissions.find(s =>
                 s.assessmentId === assessmentId && s.studentName === currentUser.username
             );
-            
+
             if (!assessment || !submission) {
                 alert('Assessment or submission not found');
                 return;
@@ -2769,7 +2832,7 @@
 
             const now = new Date();
             const end = new Date(assessment.endDate);
-            
+
             if (now > end) {
                 alert('This assessment has ended. You can no longer edit your submission.');
                 return;
@@ -2783,7 +2846,7 @@
         function showAssessmentModal(assessment, existingSubmission = null) {
             const modal = document.getElementById('assessmentModal');
             const content = document.getElementById('assessmentContent');
-            
+
             let assessmentHtml = `
                 <div class="header">
                     <h2>${assessment.title}</h2>
@@ -2799,7 +2862,7 @@
 
             assessment.questions.forEach((question, index) => {
                 const existingAnswers = existingSubmission ? existingSubmission.answers[question.id] || {} : {};
-                
+
                 assessmentHtml += `
                     <div class="question-card">
                         <h4>Question ${index + 1} (${question.points} points)</h4>
@@ -2833,7 +2896,7 @@
 
         function renderMultipleAnswerInputs(question, existingAnswers) {
             let inputsHtml = '';
-            
+
             question.types.forEach(type => {
                 const existingAnswer = existingAnswers[type] || '';
                 inputsHtml += `
@@ -2843,14 +2906,14 @@
                     </div>
                 `;
             });
-            
+
             return inputsHtml;
         }
 
         function renderAnswerInput(question, existingAnswer, type) {
             const fieldName = `${question.id}_${type}`;
-            
-            switch(type) {
+
+            switch (type) {
                 case 'text':
                     const minChars = question.textLimit || 0;
                     return `
@@ -2861,7 +2924,7 @@
                             ${existingAnswer.length} / ${minChars} minimum characters
                         </div>
                     `;
-                
+
                 case 'code':
                     const minCharsCode = question.textLimit || 0;
                     return `
@@ -2873,7 +2936,7 @@
                             ${existingAnswer.length} / ${minCharsCode} minimum characters
                         </div>
                     `;
-                
+
                 case 'file':
                     return `
                         <div class="file-upload" onclick="document.getElementById('${fieldName}').click()">
@@ -2887,10 +2950,10 @@
                             </div>
                         </div>
                     `;
-                
+
                 case 'url':
                     return `<input type="url" name="${fieldName}" placeholder="https://github.com/username/repository" value="${existingAnswer}">`;
-                
+
                 case 'voice':
                     return `
                         <div>
@@ -2902,7 +2965,7 @@
                             <input type="hidden" name="${fieldName}" value="${existingAnswer}">
                         </div>
                     `;
-                
+
                 default:
                     return `<input type="text" name="${fieldName}" placeholder="Enter your answer" value="${existingAnswer}">`;
             }
@@ -2912,9 +2975,9 @@
             const textarea = document.querySelector(`[name="${fieldName}"]`);
             const counter = document.getElementById(`counter_${fieldName}`);
             const currentLength = textarea.value.length;
-            
+
             counter.textContent = `${currentLength} / ${minChars} minimum characters`;
-            
+
             if (currentLength >= minChars) {
                 counter.className = 'char-counter success';
             } else {
@@ -2926,22 +2989,22 @@
             function updateTimer() {
                 const now = new Date();
                 const timeLeft = endDate - now;
-                
+
                 if (timeLeft <= 0) {
                     document.getElementById('timeRemaining').textContent = 'Time\'s up!';
                     alert('⏰ Time\'s up! Submitting your assessment automatically...');
                     submitAssessmentWithAnswers();
                     return;
                 }
-                
+
                 const hours = Math.floor(timeLeft / (1000 * 60 * 60));
                 const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                
-                document.getElementById('timeRemaining').textContent = 
+
+                document.getElementById('timeRemaining').textContent =
                     `${hours}h ${minutes}m ${seconds}s`;
             }
-            
+
             updateTimer();
             currentTimer = setInterval(updateTimer, 1000);
         }
@@ -2956,45 +3019,45 @@
 
         function saveProgress() {
             console.log('=== SAVING ASSESSMENT PROGRESS ===');
-            
+
             const form = document.getElementById('assessmentForm');
             if (!form) {
                 console.error('Assessment form not found');
                 alert('Error: Assessment form not found');
                 return false;
             }
-            
+
             const assessment = assessments.find(a => a.id === currentAssessmentId);
-            
+
             if (!assessment) {
                 console.error('Assessment not found:', currentAssessmentId);
                 alert('Error: Assessment not found');
                 return false;
             }
-            
+
             console.log('Assessment found:', assessment.title);
-            
+
             // NEW IMPROVED ANSWER COLLECTION SYSTEM
             const answers = {};
-            
+
             // Process each question systematically
             assessment.questions.forEach((question, qIndex) => {
                 console.log(`\n--- Processing Question ${qIndex + 1}: ${question.id} ---`);
                 console.log('Question types:', question.types);
-                
+
                 const questionAnswers = {};
                 let hasAnyAnswer = false;
-                
+
                 question.types.forEach(type => {
                     const fieldName = `${question.id}_${type}`;
                     console.log(`Looking for field: ${fieldName}`);
-                    
+
                     if (type === 'file') {
                         // Handle file inputs
                         const fileInput = form.querySelector(`input[name="${fieldName}"]`);
                         if (fileInput && fileInput.files.length > 0) {
                             const file = fileInput.files[0];
-                            const fileInfo = `${file.name} (${(file.size/1024).toFixed(1)}KB)`;
+                            const fileInfo = `${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
                             questionAnswers[type] = fileInfo;
                             hasAnyAnswer = true;
                             console.log(`✅ Found ${type} answer:`, fileInfo);
@@ -3009,7 +3072,7 @@
                         }
                     }
                 });
-                
+
                 // Store answers in the correct nested format
                 if (hasAnyAnswer) {
                     answers[question.id] = questionAnswers;
@@ -3018,63 +3081,63 @@
                     console.log(`⚠️ No answers found for question ${question.id}`);
                 }
             });
-            
+
             console.log('Final organized answers:', answers);
-            
+
             // Validate text minimums with better error reporting
             let validationErrors = [];
             assessment.questions.forEach((question, index) => {
                 const questionNum = index + 1;
                 console.log(`Validating question ${questionNum}:`, question.text);
-                
+
                 const questionAnswers = answers[question.id] || {};
-                
+
                 // Check text requirements
                 if (question.types.includes('text') && question.textLimit) {
                     const textAnswer = questionAnswers['text'];
                     const currentLength = textAnswer ? textAnswer.length : 0;
-                    
+
                     console.log(`Question ${questionNum} text validation:`, {
                         required: question.textLimit,
                         current: currentLength,
                         answer: textAnswer ? textAnswer.substring(0, 50) + '...' : 'No answer'
                     });
-                    
+
                     if (!textAnswer || currentLength < question.textLimit) {
                         validationErrors.push(`Question ${questionNum} (Text): Need at least ${question.textLimit} characters (currently ${currentLength})`);
                     }
                 }
-                
+
                 // Check code requirements
                 if (question.types.includes('code') && question.textLimit) {
                     const codeAnswer = questionAnswers['code'];
                     const currentLength = codeAnswer ? codeAnswer.length : 0;
-                    
+
                     console.log(`Question ${questionNum} code validation:`, {
                         required: question.textLimit,
                         current: currentLength,
                         answer: codeAnswer ? codeAnswer.substring(0, 50) + '...' : 'No answer'
                     });
-                    
+
                     if (!codeAnswer || currentLength < question.textLimit) {
                         validationErrors.push(`Question ${questionNum} (Code): Need at least ${question.textLimit} characters (currently ${currentLength})`);
                     }
                 }
             });
-            
+
             if (validationErrors.length > 0) {
                 console.log('Validation errors found:', validationErrors);
                 alert('Please fix these issues before saving:\n\n' + validationErrors.join('\n'));
                 return false;
             }
-            
+
             console.log('Validation passed, saving submission...');
-            
+
             // Save to existing submission or create new draft
-            let submission = submissions.find(s => 
+            let submission = submissions.find(s =>
                 s.assessmentId === currentAssessmentId && s.studentName === currentUser.username
             );
-            
+
             if (!submission) {
                 submission = {
                     id: 'sub_' + Date.now(),
@@ -3089,12 +3152,12 @@
             } else {
                 console.log('Updating existing submission:', submission.id);
             }
-            
+
             submission.answers = answers;
             submission.lastModified = new Date().toISOString();
-            
+
             console.log('FINAL SUBMISSION STRUCTURE:', JSON.stringify(submission, null, 2));
-            
+
             console.log('Submission saved successfully');
             alert('✅ Progress saved successfully!');
             return true;
@@ -3102,38 +3165,38 @@
 
         function debugAssessmentForm() {
             console.log('=== ASSESSMENT FORM DEBUG (SIMPLIFIED) ===');
-            
+
             try {
                 const form = document.getElementById('assessmentForm');
                 if (!form) {
                     alert('❌ Error: Assessment form not found!');
                     return;
                 }
-                
+
                 const assessment = assessments.find(a => a.id === currentAssessmentId);
                 if (!assessment) {
                     alert('❌ Error: Assessment not found!');
                     return;
                 }
-                
+
                 console.log('Form found, analyzing...');
-                
+
                 // Get all form elements
                 const allInputs = form.querySelectorAll('input, textarea, select');
                 const textInputs = form.querySelectorAll('input[type="text"], textarea');
                 const fileInputs = form.querySelectorAll('input[type="file"]');
                 const urlInputs = form.querySelectorAll('input[type="url"]');
-                
+
                 let debugInfo = `FORM DEBUG REPORT:\n\n`;
                 debugInfo += `Assessment: ${assessment.title}\n`;
                 debugInfo += `Student: ${currentUser.username}\n\n`;
-                
+
                 debugInfo += `FORM ELEMENTS FOUND:\n`;
                 debugInfo += `• Total elements: ${allInputs.length}\n`;
                 debugInfo += `• Text areas/inputs: ${textInputs.length}\n`;
                 debugInfo += `• File inputs: ${fileInputs.length}\n`;
                 debugInfo += `• URL inputs: ${urlInputs.length}\n\n`;
-                
+
                 debugInfo += `ELEMENT DETAILS:\n`;
                 allInputs.forEach((input, index) => {
                     let value = '';
@@ -3142,23 +3205,23 @@
                     } else {
                         value = input.value ? `"${input.value.substring(0, 30)}${input.value.length > 30 ? '...' : ''}"` : 'Empty';
                     }
-                    
+
                     debugInfo += `${index + 1}. ${input.type} (${input.name || 'no name'}): ${value}\n`;
                 });
-                
+
                 debugInfo += `\nVALIDATION CHECK:\n`;
                 let canSave = true;
                 let canSubmit = true;
-                
+
                 assessment.questions.forEach((question, qIndex) => {
                     const qNum = qIndex + 1;
                     debugInfo += `\nQ${qNum}: ${question.text.substring(0, 40)}...\n`;
                     debugInfo += `Required types: ${question.types.join(', ')}\n`;
-                    
+
                     question.types.forEach(type => {
                         const fieldName = `${question.id}_${type}`;
                         const element = form.querySelector(`[name="${fieldName}"]`);
-                        
+
                         if (element) {
                             if (type === 'file') {
                                 const hasFile = element.files.length > 0;
@@ -3166,7 +3229,7 @@
                             } else {
                                 const hasValue = element.value && element.value.trim();
                                 let status = hasValue ? '✅ Has value' : '⚠️ Empty';
-                                
+
                                 if (hasValue && question.textLimit && (type === 'text' || type === 'code')) {
                                     const length = element.value.length;
                                     if (length < question.textLimit) {
@@ -3176,7 +3239,7 @@
                                         status = `✅ Good length (${length}/${question.textLimit})`;
                                     }
                                 }
-                                
+
                                 debugInfo += `  ${type}: ${status}\n`;
                             }
                         } else {
@@ -3186,24 +3249,24 @@
                         }
                     });
                 });
-                
+
                 debugInfo += `\nSTATUS:\n`;
                 debugInfo += `Can Save Progress: ${canSave ? '✅ YES' : '❌ NO'}\n`;
                 debugInfo += `Can Submit: ${canSubmit ? '✅ YES' : '❌ NO'}\n`;
-                
+
                 if (!canSubmit) {
                     debugInfo += `\n💡 TIP: You can save as draft and continue editing later.`;
                 }
-                
+
                 console.log('Form debug completed:', {
                     totalElements: allInputs.length,
                     canSave,
                     canSubmit,
                     assessment: assessment.title
                 });
-                
+
                 alert(debugInfo);
-                
+
             } catch (error) {
                 console.error('Error in form debug:', error);
                 alert('❌ Error analyzing form: ' + error.message);
@@ -3212,26 +3275,26 @@
 
         function testFormFunctionality() {
             console.log('=== TESTING FORM FUNCTIONALITY ===');
-            
+
             try {
                 const form = document.getElementById('assessmentForm');
                 if (!form) {
                     alert('❌ No assessment form found. Please open an assessment first.');
                     return;
                 }
-                
+
                 // Test basic form elements
                 const allInputs = form.querySelectorAll('input, textarea, select');
                 console.log('Found form elements:', allInputs.length);
-                
+
                 // Try to collect data like saveProgress does
                 const testAnswers = {};
                 let elementsProcessed = 0;
-                
+
                 allInputs.forEach(input => {
                     if (input.name && input.name.trim()) {
                         elementsProcessed++;
-                        
+
                         if (input.type === 'file') {
                             if (input.files.length > 0) {
                                 testAnswers[input.name] = `File: ${input.files[0].name}`;
@@ -3241,16 +3304,16 @@
                         }
                     }
                 });
-                
+
                 console.log('Test collection results:', {
                     totalElements: allInputs.length,
                     elementsProcessed,
                     answersCollected: Object.keys(testAnswers).length,
                     answers: testAnswers
                 });
-                
+
                 alert(`✅ Form Test Results:\n\n• Total form elements: ${allInputs.length}\n• Elements with names: ${elementsProcessed}\n• Answers collected: ${Object.keys(testAnswers).length}\n\nForm appears to be working correctly!\n\nCheck console (F12) for detailed results.`);
-                
+
             } catch (error) {
                 console.error('Form test error:', error);
                 alert('❌ Form test failed: ' + error.message);
@@ -3259,15 +3322,15 @@
 
         function handleFileUpload(fieldName) {
             console.log('File upload triggered for field:', fieldName);
-            
+
             const fileInput = document.getElementById(fieldName);
             const uploadArea = document.getElementById(`upload-area-${fieldName}`);
-            
+
             if (!fileInput || !uploadArea) {
                 console.error('File input or upload area not found');
                 return;
             }
-            
+
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 console.log('File selected:', {
@@ -3276,19 +3339,19 @@
                     type: file.type,
                     lastModified: new Date(file.lastModified).toLocaleString()
                 });
-                
+
                 // Update the upload area to show file info
                 const fileSizeKB = (file.size / 1024).toFixed(1);
                 const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
                 const displaySize = file.size > 1024 * 1024 ? `${fileSizeMB}MB` : `${fileSizeKB}KB`;
-                
+
                 uploadArea.innerHTML = `
                     <p style="color: #28a745; font-weight: bold;">✅ File uploaded successfully!</p>
                     <p style="font-size: 14px;"><strong>File:</strong> ${file.name}</p>
                     <p style="font-size: 12px; color: #666;"><strong>Size:</strong> ${displaySize} | <strong>Type:</strong> ${file.type || 'Unknown'}</p>
                     <p style="font-size: 12px; color: #007bff;">Click here to change file</p>
                 `;
-                
+
                 console.log('File upload UI updated successfully');
             } else {
                 console.log('No file selected');
@@ -3303,50 +3366,50 @@
             console.log('🎯 SUBMIT ASSESSMENT WITH ANSWERS - STARTING 🎯');
             console.log('Current Assessment ID:', currentAssessmentId);
             console.log('Current User:', currentUser);
-            
+
             try {
                 if (!currentAssessmentId) {
                     console.error('❌ No assessment ID found');
                     alert('❌ No assessment ID found');
                     return;
                 }
-                
+
                 // Get the assessment and form
                 const assessment = assessments.find(a => a.id === currentAssessmentId);
                 const form = document.getElementById('assessmentForm');
-                
+
                 console.log('Found assessment:', assessment ? assessment.title : 'NOT FOUND');
                 console.log('Found form:', form ? 'YES' : 'NO');
-                
+
                 if (!assessment || !form) {
                     console.error('❌ Assessment or form not found');
                     alert('❌ Assessment or form not found');
                     return;
                 }
-                
+
                 console.log('📋 Assessment:', assessment.title);
                 console.log('👤 Student:', currentUser.username);
-                
+
                 // Use the same improved answer collection as saveProgress
                 const answers = {};
-                
+
                 assessment.questions.forEach((question, qIndex) => {
                     console.log(`\n--- Processing Question ${qIndex + 1}: ${question.id} ---`);
                     console.log('Question types:', question.types);
-                    
+
                     const questionAnswers = {};
                     let hasAnyAnswer = false;
-                    
+
                     question.types.forEach(type => {
                         const fieldName = `${question.id}_${type}`;
                         console.log(`Looking for field: ${fieldName}`);
-                        
+
                         if (type === 'file') {
                             const fileInput = form.querySelector(`input[name="${fieldName}"]`);
                             console.log('File input found:', fileInput ? 'YES' : 'NO');
                             if (fileInput && fileInput.files.length > 0) {
                                 const file = fileInput.files[0];
-                                const fileInfo = `${file.name} (${(file.size/1024).toFixed(1)}KB)`;
+                                const fileInfo = `${file.name} (${(file.size / 1024).toFixed(1)}KB)`;
                                 questionAnswers[type] = fileInfo;
                                 hasAnyAnswer = true;
                                 console.log(`✅ Found ${type} answer:`, fileInfo);
@@ -3364,7 +3427,7 @@
                             }
                         }
                     });
-                    
+
                     if (hasAnyAnswer) {
                         answers[question.id] = questionAnswers;
                         console.log(`✅ Stored answers for question ${question.id}:`, questionAnswers);
@@ -3372,17 +3435,17 @@
                         console.log(`⚠️ No answers found for question ${question.id}`);
                     }
                 });
-                
+
                 console.log('\n📋 FINAL COLLECTED ANSWERS:', answers);
                 console.log('📊 Total questions answered:', Object.keys(answers).length);
-                
+
                 // Find or create submission with collected answers
-                let submission = submissions.find(s => 
+                let submission = submissions.find(s =>
                     s.assessmentId === currentAssessmentId && s.studentName === currentUser.username
                 );
-                
+
                 console.log('Existing submission found:', submission ? 'YES' : 'NO');
-                
+
                 if (!submission) {
                     submission = {
                         id: 'sub_' + Date.now(),
@@ -3400,24 +3463,24 @@
                     submission.submittedAt = new Date().toISOString();
                     console.log('✅ Updated existing submission:', submission.id);
                 }
-                
+
                 console.log('💾 Final submission structure:', JSON.stringify(submission, null, 2));
                 console.log('📊 Total submissions in system:', submissions.length);
-                
+
                 // Close modal
                 console.log('🚪 Closing assessment modal...');
                 closeAssessmentModal();
-                
+
                 // Success message
                 const successMessage = `🎉 ASSESSMENT SUBMITTED SUCCESSFULLY! 🎉\n\nYour submission details:\n• Questions answered: ${Object.keys(answers).length}\n• Submission ID: ${submission.id}\n• Submitted at: ${new Date().toLocaleString()}\n\nYou can view your answers in "My Submissions" tab.`;
                 console.log('✅ Success message:', successMessage);
                 alert(successMessage);
-                
+
                 // Refresh student dashboard
                 console.log('🔄 Refreshing student dashboard...');
                 loadStudentAssessments();
                 console.log('✅ SUBMISSION COMPLETED SUCCESSFULLY!');
-                
+
             } catch (error) {
                 console.error('❌ SUBMISSION ERROR:', error);
                 console.error('Error stack:', error.stack);
@@ -3427,7 +3490,7 @@
 
         function showSubmissionConfirmation() {
             console.log('📋 Showing custom submission confirmation dialog');
-            
+
             // Create custom confirmation modal
             const confirmationHTML = `
                 <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center;">
@@ -3451,7 +3514,7 @@
                     </div>
                 </div>
             `;
-            
+
             // Add modal to page
             const modal = document.createElement('div');
             modal.id = 'submissionConfirmationModal';
@@ -3470,13 +3533,13 @@
 
         function confirmSubmissionFinal() {
             console.log('User confirmed submission via custom modal');
-            
+
             // Remove the confirmation modal
             const modal = document.getElementById('submissionConfirmationModal');
             if (modal) {
                 modal.remove();
             }
-            
+
             // Proceed with actual submission
             submitAssessmentWithAnswers();
         }
@@ -3486,17 +3549,17 @@
             const stopButton = recordButton.nextElementSibling;
             const recordingDiv = document.getElementById('recording_' + fieldName);
             const hiddenInput = document.querySelector(`input[name="${fieldName}"]`);
-            
+
             recordButton.disabled = true;
             stopButton.disabled = false;
-            
+
             recordingDiv.innerHTML = '<p style="color: red;">🔴 Recording...</p>';
-            
+
             setTimeout(() => {
                 const filename = `voice_recording_${Date.now()}.wav`;
                 recordingDiv.innerHTML = `<p style="color: green;">✅ Recording saved: ${filename}</p>`;
                 hiddenInput.value = filename;
-                
+
                 recordButton.disabled = false;
                 stopButton.disabled = true;
             }, 2000);
@@ -3518,10 +3581,10 @@
 
                 const submissionCard = document.createElement('div');
                 submissionCard.className = 'question-card';
-                
+
                 const status = submission.isDraft ? 'Draft' : 'Submitted';
                 const statusClass = submission.isDraft ? 'status-pending' : 'status-open';
-                
+
                 submissionCard.innerHTML = `
                     <div class="question-header">
                         <h4>${assessment.title}</h4>
@@ -3538,7 +3601,7 @@
                         <button class="btn btn-secondary" onclick="debugMySubmission('${submission.id}')">🐛 Debug Submission</button>
                     </div>
                 `;
-                
+
                 container.appendChild(submissionCard);
             });
 
@@ -3549,10 +3612,10 @@
 
         function viewMyAnswers(submissionId) {
             console.log('=== VIEWING STUDENT ANSWERS ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             const assessment = assessments.find(a => a.id === submission.assessmentId);
-            
+
             if (!submission || !assessment) {
                 alert('❌ Submission or assessment not found');
                 return;
@@ -3561,7 +3624,7 @@
             console.log('Viewing answers for submission:', submission);
             console.log('Assessment:', assessment);
             console.log('Submission answers:', submission.answers);
-            
+
             let answersHtml = `
                 <h3>My Answers: ${assessment.title}</h3>
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -3576,11 +3639,11 @@
             assessment.questions.forEach((question, index) => {
                 const questionNum = index + 1;
                 console.log(`\n--- Displaying question ${questionNum}: ${question.id} ---`);
-                
+
                 // Get answers for this question using the same logic as grading
                 const questionAnswers = submission.answers ? submission.answers[question.id] : null;
                 console.log(`Answers for question ${question.id}:`, questionAnswers);
-                
+
                 answersHtml += `
                     <div class="question-card">
                         <h4>Question ${questionNum} (${question.points} points)</h4>
@@ -3589,7 +3652,7 @@
                         <div class="answer-display">
                             <strong>My Answers:</strong><br>
                 `;
-                
+
                 // Display answers
                 if (questionAnswers && typeof questionAnswers === 'object' && Object.keys(questionAnswers).length > 0) {
                     // Multiple answer types (object format)
@@ -3610,7 +3673,7 @@
                     `;
                     console.log(`❌ No answer found for question ${question.id}`);
                 }
-                
+
                 // Show score if graded
                 if (submission.graded && submission.scores && submission.scores[question.id] !== undefined) {
                     const score = submission.scores[question.id];
@@ -3621,7 +3684,7 @@
                         </div>
                     `;
                 }
-                
+
                 answersHtml += `
                         </div>
                     </div>
@@ -3647,10 +3710,10 @@
 
         function formatAnswerForStudent(answer, type, label) {
             if (!answer) return `<p><strong>${label}:</strong> <em>No answer provided</em></p>`;
-            
+
             let formattedAnswer = '';
-            
-            switch(type.toLowerCase()) {
+
+            switch (type.toLowerCase()) {
                 case 'text':
                 case 'code':
                     formattedAnswer = `
@@ -3703,30 +3766,30 @@
                         </div>
                     `;
             }
-            
+
             return formattedAnswer;
         }
 
         function debugMySubmission(submissionId) {
             console.log('=== STUDENT DEBUGGING SUBMISSION ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             if (!submission) {
                 alert('❌ Submission not found!');
                 return;
             }
-            
+
             let debugInfo = `MY SUBMISSION DEBUG:\n\n`;
             debugInfo += `Submission ID: ${submission.id}\n`;
             debugInfo += `Assessment ID: ${submission.assessmentId}\n`;
             debugInfo += `Submitted: ${new Date(submission.submittedAt).toLocaleString()}\n`;
             debugInfo += `Is Draft: ${submission.isDraft ? 'Yes' : 'No'}\n`;
             debugInfo += `Is Graded: ${submission.graded ? 'Yes' : 'No'}\n\n`;
-            
+
             debugInfo += `ANSWERS STRUCTURE:\n`;
             if (submission.answers && Object.keys(submission.answers).length > 0) {
                 debugInfo += `Total Questions Answered: ${Object.keys(submission.answers).length}\n\n`;
-                
+
                 Object.entries(submission.answers).forEach(([questionId, answers]) => {
                     debugInfo += `Question: ${questionId}\n`;
                     if (typeof answers === 'object') {
@@ -3743,7 +3806,7 @@
             } else {
                 debugInfo += `❌ No answers found in submission!\n`;
             }
-            
+
             if (submission.graded && submission.scores) {
                 debugInfo += `SCORES:\n`;
                 Object.entries(submission.scores).forEach(([questionId, score]) => {
@@ -3751,7 +3814,7 @@
                 });
                 debugInfo += `Total Score: ${submission.score}\n`;
             }
-            
+
             console.log('Full submission object:', submission);
             alert(debugInfo);
         }
@@ -3770,18 +3833,18 @@
 
                 const resultCard = document.createElement('div');
                 resultCard.className = 'question-card';
-                
+
                 let percentage = 'Pending';
                 let gradeClass = 'status-pending';
                 let statusText = 'Awaiting Grade';
-                
+
                 if (submission.graded) {
                     percentage = ((submission.score / assessment.maxScore) * 100).toFixed(1) + '%';
                     if (parseFloat(percentage) >= 80) gradeClass = 'status-open';
                     else if (parseFloat(percentage) < 60) gradeClass = 'status-closed';
                     statusText = 'Graded';
                 }
-                
+
                 resultCard.innerHTML = `
                     <div class="question-header">
                         <h4>${assessment.title}</h4>
@@ -3789,23 +3852,23 @@
                     </div>
                     <div class="question-meta">
                         <strong>Status:</strong> ${statusText}<br>
-                        ${submission.graded ? 
-                            `<strong>Score:</strong> ${submission.score} / ${assessment.maxScore}<br>
-                             <strong>Graded:</strong> ${new Date(submission.gradedAt).toLocaleString()}<br>` : 
-                            ''
-                        }
+                        ${submission.graded ?
+                        `<strong>Score:</strong> ${submission.score} / ${assessment.maxScore}<br>
+                             <strong>Graded:</strong> ${new Date(submission.gradedAt).toLocaleString()}<br>` :
+                        ''
+                    }
                         <strong>Submitted:</strong> ${new Date(submission.submittedAt).toLocaleString()}<br>
                         <strong>Draft:</strong> ${submission.isDraft ? 'Yes' : 'No'}
                     </div>
                     <div style="margin-top: 15px;">
                         <button class="btn btn-secondary" onclick="viewMyAnswers('${submission.id}')">👁️ View My Answers</button>
-                        ${submission.graded ? 
-                            `<button class="btn" onclick="viewDetailedResults('${submission.id}')">📊 Detailed Results</button>` : 
-                            `<button class="btn btn-warning" onclick="alert('This submission is still being graded.')">⏳ Pending Grade</button>`
-                        }
+                        ${submission.graded ?
+                        `<button class="btn" onclick="viewDetailedResults('${submission.id}')">📊 Detailed Results</button>` :
+                        `<button class="btn btn-warning" onclick="alert('This submission is still being graded.')">⏳ Pending Grade</button>`
+                    }
                     </div>
                 `;
-                
+
                 container.appendChild(resultCard);
             });
 
@@ -3830,10 +3893,10 @@
 
         function viewDetailedResults(submissionId) {
             console.log('=== VIEWING DETAILED RESULTS ===');
-            
+
             const submission = submissions.find(s => s.id === submissionId);
             const assessment = assessments.find(a => a.id === submission.assessmentId);
-            
+
             if (!submission || !assessment) {
                 alert('❌ Submission or assessment not found');
                 return;
@@ -3845,11 +3908,11 @@
             }
 
             console.log('Viewing detailed results for submission:', submission);
-            
+
             const totalPossible = assessment.maxScore;
             const totalEarned = submission.score;
             const percentage = ((totalEarned / totalPossible) * 100).toFixed(1);
-            
+
             let resultsHtml = `
                 <h3>Detailed Results: ${assessment.title}</h3>
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
@@ -3866,13 +3929,13 @@
                 const questionScore = submission.scores ? submission.scores[question.id] || 0 : 0;
                 const questionAnswers = submission.answers ? submission.answers[question.id] : null;
                 const questionPercentage = ((questionScore / question.points) * 100).toFixed(1);
-                
+
                 if (questionScore === question.points) questionsCorrect++;
-                
+
                 let scoreClass = 'status-pending';
                 if (questionScore === question.points) scoreClass = 'status-open';
                 else if (questionScore === 0) scoreClass = 'status-closed';
-                
+
                 resultsHtml += `
                     <div class="question-card">
                         <div class="question-header">
@@ -3885,7 +3948,7 @@
                         <div class="answer-display">
                             <strong>My Answer:</strong><br>
                 `;
-                
+
                 // Display the student's answers
                 if (questionAnswers && typeof questionAnswers === 'object' && Object.keys(questionAnswers).length > 0) {
                     Object.entries(questionAnswers).forEach(([type, answer]) => {
@@ -3898,7 +3961,7 @@
                 } else {
                     resultsHtml += `<p style="color: #dc3545; font-style: italic;">No answer submitted</p>`;
                 }
-                
+
                 resultsHtml += `
                         </div>
                         <div style="margin-top: 15px; padding: 10px; background: ${scoreClass === 'status-open' ? '#d4edda' : scoreClass === 'status-closed' ? '#f8d7da' : '#fff3cd'}; border-radius: 5px;">
@@ -3950,42 +4013,42 @@
         }
 
         // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             console.log('=== APPLICATION STARTING ===');
-            
+
             // Force clear any existing data and initialize fresh sample data
             assessments = [];
             submissions = [];
             initializeSampleData();
-            
+
             console.log('Application initialized with fresh data');
             console.log('Total assessments:', assessments.length);
-            
+
             // Define the global submit function here to ensure it's loaded
-            window.submitAssessmentDirectly = function() {
+            window.submitAssessmentDirectly = function () {
                 console.log('🎯 WINDOW SUBMIT - GUARANTEED ACCESS 🎯');
-                
+
                 try {
                     if (!currentAssessmentId) {
                         alert('❌ No assessment ID found');
                         return;
                     }
-                    
+
                     console.log('📋 Assessment ID:', currentAssessmentId);
                     console.log('👤 Student:', currentUser ? currentUser.username : 'Unknown');
-                    
+
                     // Create or find submission
-                    let submission = submissions.find(s => 
-                        s.assessmentId === currentAssessmentId && 
+                    let submission = submissions.find(s =>
+                        s.assessmentId === currentAssessmentId &&
                         s.studentName === (currentUser ? currentUser.username : 'student')
                     );
-                    
+
                     if (!submission) {
                         submission = {
                             id: 'sub_' + Date.now(),
                             assessmentId: currentAssessmentId,
                             studentName: currentUser ? currentUser.username : 'student',
-                            answers: {'submitted': 'Assessment completed at ' + new Date().toLocaleString()},
+                            answers: { 'submitted': 'Assessment completed at ' + new Date().toLocaleString() },
                             submittedAt: new Date().toISOString(),
                             isDraft: false
                         };
@@ -3996,49 +4059,49 @@
                         submission.submittedAt = new Date().toISOString();
                         console.log('📝 Updated submission:', submission.id);
                     }
-                    
+
                     console.log('💾 Submission completed');
-                    
+
                     // Close modal manually
                     const modal = document.getElementById('assessmentModal');
                     if (modal) {
                         modal.style.display = 'none';
                         console.log('🚪 Modal closed');
                     }
-                    
+
                     // Clear timer
                     if (currentTimer) {
                         clearInterval(currentTimer);
                         currentTimer = null;
                     }
-                    
+
                     // Success message
                     alert('🎉 ASSESSMENT SUBMITTED! 🎉\n\nYour submission has been saved successfully.\n\nYou can view it in "My Submissions" tab.');
-                    
+
                     // Refresh dashboard
                     if (typeof loadStudentAssessments === 'function') {
                         loadStudentAssessments();
                         console.log('🔄 Dashboard refreshed');
                     }
-                    
+
                     console.log('✅ WINDOW SUBMIT COMPLETED!');
-                    
+
                 } catch (error) {
                     console.error('❌ ERROR:', error);
                     alert('❌ Error: ' + error.message);
                 }
             };
-            
+
             console.log('✅ Global submit function defined');
-            
+
             // Set smart default dates for assessment creation
             setSmartDefaults();
-            
+
             // Add event listeners for datetime inputs
             addDateTimeListeners();
 
             // Enhanced file upload drag and drop functionality
-            document.addEventListener('dragover', function(e) {
+            document.addEventListener('dragover', function (e) {
                 e.preventDefault();
                 if (e.target.classList.contains('file-upload') || e.target.closest('.file-upload')) {
                     const fileUpload = e.target.classList.contains('file-upload') ? e.target : e.target.closest('.file-upload');
@@ -4046,20 +4109,20 @@
                 }
             });
 
-            document.addEventListener('dragleave', function(e) {
+            document.addEventListener('dragleave', function (e) {
                 if (e.target.classList.contains('file-upload') || e.target.closest('.file-upload')) {
                     const fileUpload = e.target.classList.contains('file-upload') ? e.target : e.target.closest('.file-upload');
                     fileUpload.classList.remove('dragover');
                 }
             });
 
-            document.addEventListener('drop', function(e) {
+            document.addEventListener('drop', function (e) {
                 e.preventDefault();
-                
+
                 if (e.target.classList.contains('file-upload') || e.target.closest('.file-upload')) {
                     const fileUpload = e.target.classList.contains('file-upload') ? e.target : e.target.closest('.file-upload');
                     fileUpload.classList.remove('dragover');
-                    
+
                     const files = e.dataTransfer.files;
                     if (files.length > 0) {
                         const fileInput = fileUpload.querySelector('input[type="file"]');
@@ -4068,11 +4131,11 @@
                             const dataTransfer = new DataTransfer();
                             dataTransfer.items.add(files[0]); // Only take the first file
                             fileInput.files = dataTransfer.files;
-                            
+
                             // Trigger the change event to update UI
                             const fieldName = fileInput.id;
                             handleFileUpload(fieldName);
-                            
+
                             console.log('File dropped and processed:', files[0].name);
                         }
                     }
@@ -4086,14 +4149,14 @@
             const tomorrow9AM = new Date(now);
             tomorrow9AM.setDate(tomorrow9AM.getDate() + 1);
             tomorrow9AM.setHours(9, 0, 0, 0);
-            
+
             const oneWeekLater = new Date(tomorrow9AM);
             oneWeekLater.setDate(oneWeekLater.getDate() + 7);
             oneWeekLater.setHours(17, 0, 0, 0);
-            
+
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            
+
             if (startDateInput && endDateInput) {
                 startDateInput.value = tomorrow9AM.toISOString().slice(0, 16);
                 endDateInput.value = oneWeekLater.toISOString().slice(0, 16);
@@ -4103,31 +4166,31 @@
 
         function setQuickPreset(presetType) {
             console.log('Setting quick preset:', presetType);
-            
+
             // Remove active class from all preset buttons
             document.querySelectorAll('.preset-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
+
             // Add active class to clicked button
             if (event && event.target) {
                 event.target.classList.add('active');
             }
-            
+
             const now = new Date();
             let startDate, endDate;
-            
-            switch(presetType) {
+
+            switch (presetType) {
                 case 'now-1hour':
                     startDate = new Date(now);
                     endDate = new Date(now.getTime() + 60 * 60 * 1000);
                     break;
-                    
+
                 case 'now-1day':
                     startDate = new Date(now);
                     endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
                     break;
-                    
+
                 case 'tomorrow-1week':
                     startDate = new Date(now);
                     startDate.setDate(startDate.getDate() + 1);
@@ -4135,15 +4198,15 @@
                     endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
                     endDate.setHours(17, 0, 0, 0);
                     break;
-                    
+
                 default:
                     console.error('Unknown preset type:', presetType);
                     return;
             }
-            
+
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            
+
             if (startDateInput && endDateInput) {
                 startDateInput.value = startDate.toISOString().slice(0, 16);
                 endDateInput.value = endDate.toISOString().slice(0, 16);
@@ -4159,28 +4222,28 @@
             const endDateInput = document.getElementById('endDate');
             const durationInfo = document.getElementById('durationInfo');
             const durationText = document.getElementById('durationText');
-            
+
             if (!startDateInput || !endDateInput || !durationInfo || !durationText) return;
-            
+
             if (startDateInput.value && endDateInput.value) {
                 const startDate = new Date(startDateInput.value);
                 const endDate = new Date(endDateInput.value);
-                
+
                 if (endDate <= startDate) {
                     durationInfo.style.display = 'block';
                     durationText.textContent = '⚠️ End date must be after start date';
                     durationText.style.color = '#dc3545';
                     return;
                 }
-                
+
                 const duration = endDate - startDate;
                 const days = Math.floor(duration / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                
+
                 let durationString = 'Duration: ';
                 if (days > 0) durationString += `${days} day${days > 1 ? 's' : ''} `;
                 if (hours > 0) durationString += `${hours} hour${hours > 1 ? 's' : ''}`;
-                
+
                 durationInfo.style.display = 'block';
                 durationText.textContent = durationString;
                 durationText.style.color = '#1976d2';
@@ -4192,7 +4255,7 @@
         function addDateTimeListeners() {
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
-            
+
             if (startDateInput && endDateInput) {
                 startDateInput.addEventListener('change', updateSimpleDuration);
                 endDateInput.addEventListener('change', updateSimpleDuration);
@@ -4200,4 +4263,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,5 +1,5 @@
 import React from 'react';
-import AssessmentSystem from './AssessmentSystem';
+import AssessmentSystem from './assessment-management-preview.tsx';
 import LoginForm from './LoginForm';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 

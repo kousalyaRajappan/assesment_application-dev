@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef ,useCallback } from 'react';
+import { collection,addDoc ,getDocs,updateDoc,doc,arrayUnion,deleteDoc,getDoc } from "firebase/firestore";
+
+
+import { db } from "./firebaseConfig";
 
 const AssessmentManagementSystem = () => {
   // State management
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
+
   const [assessments, setAssessments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [students, setStudents] = useState(['john_doe', 'jane_smith', 'alice_johnson', 'bob_wilson', 'emma_davis']);
   const [currentAssessmentId, setCurrentAssessmentId] = useState(null);
+  const[fileId,setFileId]= useState(null);
   const [currentTimer, setCurrentTimer] = useState(null);
   
   // UI State
@@ -26,38 +32,42 @@ const AssessmentManagementSystem = () => {
   const [gradingScores, setGradingScores] = useState({});
   const [selectedAnswerTypes, setSelectedAnswerTypes] = useState(['text']);
   const [selectedTextLimit, setSelectedTextLimit] = useState(null);
+   // Fetch assessments from Firestore
+  const fetchAssessments = useCallback(async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "assessments"));
+      const list = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
 
-  // Initialize sample data
-  useEffect(() => {
-    const sampleAssessment = {
-      id: 'assessment_demo_' + Date.now(),
-      title: 'JavaScript Fundamentals - Demo Assessment',
-      description: 'Test your knowledge of JavaScript basics. This assessment is available to ALL students regardless of username.',
-      startDate: new Date(Date.now() - 86400000).toISOString(),
-      endDate: new Date(Date.now() + 7 * 86400000).toISOString(),
-      maxScore: 100,
-      createdBy: 'admin',
-      assignedStudents: [],
-      questions: [
-        {
-          id: 'q1_' + Date.now(),
-          text: 'Explain the concept of closures in JavaScript with an example.',
-          types: ['text'],
-          textLimit: 200,
-          points: 25,
-          instructions: 'Provide a clear explanation with code examples.'
-        },
-        {
-          id: 'q2_' + Date.now(),
-          text: 'Upload a screenshot of your JavaScript development environment and provide a GitHub link to your project.',
-          types: ['file', 'url'],
-          points: 35,
-          instructions: 'Include your IDE/editor with a simple JS file open and make sure the repository is public.'
-        }
-      ]
-    };
-    setAssessments([sampleAssessment]);
+        return {
+          firebaseId: doc.id, // Firestore auto ID
+          ...data,
+          questions: data.questions ? Object.values(data.questions) : [],
+          submissions: data.submissions || []
+        };
+      });
+
+      setAssessments(list); // 👈 set state here
+      console.log("Fetched assessments from Firestore:", list);
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+      alert("Failed to fetch assessments. Check console for details.");
+    }
   }, []);
+
+  // Fetch assessments when user logs in / role changes
+  useEffect(() => {
+  
+      fetchAssessments();
+    
+  }, [fetchAssessments]);
+
+  // Fetch again if student changes
+  useEffect(() => {
+    
+      fetchAssessments();
+    
+  }, [ fetchAssessments]);
 
   // Refs for form inputs
   const userRoleRef = useRef();
@@ -152,7 +162,7 @@ const AssessmentManagementSystem = () => {
     updateSelectionSummary();
   };
 
-  const createAssessment = () => {
+  const createAssessment = async() => {
     const title = assessmentTitleRef.current?.value.trim();
     const description = assessmentDescriptionRef.current?.value.trim();
     const startDate = startDateRef.current?.value;
@@ -191,19 +201,51 @@ const AssessmentManagementSystem = () => {
       questions: []
     };
 
-    setAssessments(prev => [...prev, assessment]);
+
+    try {
+    // 🔥 Save to Firestore
+ // setAssessments([...assessments, assessment]);
+      try {
+        const docRef = await addDoc(collection(db, "assessments"), assessment);
+        console.log("Assessment added with ID:", docRef.id);
+        alert("Assessment saved successfully!"); // should now show
+        // setAssessments([...assessments, { ...assessment, firebaseId: docRef.id }]);
+      } catch (error) {
+        console.error("Error adding assessment:", error);
+        alert("Could not save assessment. Please try again.");
+      }
+      
+    // Also update local state so UI reacts immediately
+    setAssessments((prev) => [...prev, assessment]);
     setCurrentAssessmentId(assessment.id);
-    
+
     // Clear form
-    if (assessmentTitleRef.current) assessmentTitleRef.current.value = '';
-    if (assessmentDescriptionRef.current) assessmentDescriptionRef.current.value = '';
-    if (maxScoreRef.current) maxScoreRef.current.value = '100';
+    if (assessmentTitleRef.current) assessmentTitleRef.current.value = "";
+    if (assessmentDescriptionRef.current) assessmentDescriptionRef.current.value = "";
+    if (maxScoreRef.current) maxScoreRef.current.value = "100";
     clearStudentSelection();
     setSmartDefaults();
     setActivePreset(null);
+
+    alert("Assessment created successfully!");
+    setAdminActiveTab("manage-assessments");
+  } catch (error) {
+    console.error("Error creating assessment:", error);
+    alert("Failed to save assessment. Please try again.");
+  }
+    // setAssessments(prev => [...prev, assessment]);
+    // setCurrentAssessmentId(assessment.id);
     
-    alert('Assessment created successfully!');
-    setAdminActiveTab('manage-assessments');
+    // // Clear form
+    // if (assessmentTitleRef.current) assessmentTitleRef.current.value = '';
+    // if (assessmentDescriptionRef.current) assessmentDescriptionRef.current.value = '';
+    // if (maxScoreRef.current) maxScoreRef.current.value = '100';
+    // clearStudentSelection();
+    // setSmartDefaults();
+    // setActivePreset(null);
+    
+    // alert('Assessment created successfully!');
+    // setAdminActiveTab('manage-assessments');
   };
 
   const addStudent = () => {
@@ -229,16 +271,30 @@ const AssessmentManagementSystem = () => {
     }
   };
 
-  const deleteAssessment = (assessmentId) => {
-    if (window.confirm('Are you sure you want to delete this assessment?')) {
-      setAssessments(prev => prev.filter(a => a.id !== assessmentId));
-      setSubmissions(prev => prev.filter(s => s.assessmentId !== assessmentId));
-    }
+  const deleteAssessment =async (assessmentId) => {
+     if (!window.confirm("Are you sure you want to delete this assessment?")) return;
+
+  try {
+    // 1️⃣ Delete from Firestore
+    await deleteDoc(doc(db, "assessments", assessmentId));
+
+    // 2️⃣ Update local state
+    setAssessments(prev => prev.filter(a => a.firebaseId !== assessmentId));
+    setSubmissions(prev => prev.filter(s => s.assessmentId !== assessmentId));
+
+    alert("Assessment deleted successfully!");
+  } catch (error) {
+    console.error("Error deleting assessment:", error);
+    alert("Failed to delete assessment, see console for details.");
+  }
+
   };
 
   // Question management functions
-  const addQuestionToAssessment = (assessmentId) => {
+  const addQuestionToAssessment = (assessmentId,fileId) => {
+    console.log("assessment id",fileId,assessmentId);
     setCurrentAssessmentId(assessmentId);
+    setFileId(fileId)
     setSelectedAnswerTypes(['text']);
     setSelectedTextLimit(null);
     setShowQuestionModal(true);
@@ -248,48 +304,68 @@ const AssessmentManagementSystem = () => {
     setShowQuestionModal(false);
     setSelectedAnswerTypes(['text']);
     setSelectedTextLimit(null);
-    setCurrentAssessmentId(null);
+    // setCurrentAssessmentId(null);
     if (questionTextRef.current) questionTextRef.current.value = '';
     if (questionPointsRef.current) questionPointsRef.current.value = '10';
     if (questionInstructionsRef.current) questionInstructionsRef.current.value = '';
   };
 
-  const addQuestion = () => {
-    const text = questionTextRef.current?.value?.trim();
-    const points = questionPointsRef.current?.value;
-    const instructions = questionInstructionsRef.current?.value?.trim();
+  const addQuestion = async() => {
+    console.log("custom fileId:", fileId, "firebaseId:", currentAssessmentId);
 
-    if (!text || !points) {
-      alert('Please fill in required fields');
-      return;
+  const text = questionTextRef.current?.value?.trim();
+  const points = questionPointsRef.current?.value;
+  const instructions = questionInstructionsRef.current?.value?.trim();
+
+  if (!text || !points) {
+    alert("Please fill in required fields");
+    return;
+  }
+
+  if (selectedAnswerTypes.length === 0) {
+    alert("Please select at least one answer type");
+    return;
+  }
+
+  const question = {
+    id: "q_" + Date.now(),
+    text,
+    types: [...selectedAnswerTypes],
+    textLimit: selectedTextLimit,
+    points: parseInt(points),
+    instructions: instructions || "",
+  };
+
+  try {
+    // ✅ Always use Firestore doc id (firebaseId)
+    const assessmentRef = doc(db, "assessments", currentAssessmentId);
+    await updateDoc(assessmentRef, {
+      questions: arrayUnion(question),
+    });
+
+    // ✅ Update local state (match by firebaseId)
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.firebaseId === currentAssessmentId
+          ? { ...a, questions: [...(a.questions || []), question] }
+          : a
+      )
+    );
+
+    // ✅ Also update selectedAssessmentForQuestions if it's the same doc
+    if (selectedAssessmentForQuestions?.firebaseId === currentAssessmentId) {
+      setSelectedAssessmentForQuestions((prev) => ({
+        ...prev!,
+        questions: [...(prev?.questions || []), question],
+      }));
     }
-
-    if (selectedAnswerTypes.length === 0) {
-      alert('Please select at least one answer type');
-      return;
-    }
-
-    const question = {
-      id: 'q_' + Date.now(),
-      text,
-      types: [...selectedAnswerTypes],
-      textLimit: selectedTextLimit,
-      points: parseInt(points),
-      instructions: instructions || ''
-    };
-
-    setAssessments(prev => prev.map(assessment => {
-      if (assessment.id === currentAssessmentId) {
-        return {
-          ...assessment,
-          questions: [...(assessment.questions || []), question]
-        };
-      }
-      return assessment;
-    }));
 
     closeQuestionModal();
-    alert('Question added successfully!');
+    alert("Question added successfully!");
+  } catch (error) {
+    console.error("Error adding question:", error);
+    alert("Failed to add question. Please try again.");
+  }
   };
 
   const toggleAnswerType = (type) => {
@@ -310,14 +386,47 @@ const AssessmentManagementSystem = () => {
     setSelectedTextLimit(prev => prev === limit ? null : limit);
   };
 
-  const viewAssessmentQuestions = (assessmentId) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
-    if (!assessment || !assessment.questions || assessment.questions.length === 0) {
-      alert('No questions found for this assessment');
+  const viewAssessmentQuestions = async(assessmentId) => {
+
+    try {
+    const assessmentRef = doc(db, "assessments", assessmentId);
+    const assessmentSnap = await getDoc(assessmentRef);
+
+    if (!assessmentSnap.exists()) {
+      alert("Assessment not found in database!");
       return;
     }
-    setSelectedAssessmentForQuestions(assessment);
+
+    const data = assessmentSnap.data();
+    console.log("Raw Firestore data:", data); // 👈 check structure here
+
+    const questions = data?.questions ?? [];
+
+    if (questions.length === 0) {
+      alert("No questions found for this assessment");
+      return;
+    }
+
+    console.log("Fetched questions:", questions);
+
+    setSelectedAssessmentForQuestions({
+      firebaseId:assessmentId,
+      id: assessmentSnap.id,
+      ...data,
+      questions: questions,
+    });
     setShowQuestionsViewModal(true);
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    alert("Failed to load questions. Check console for details.");
+  }
+    // const assessment = assessments.find(a => a.id === assessmentId);
+    // if (!assessment || !assessment.questions || assessment.questions.length === 0) {
+    //   alert('No questions found for this assessment');
+    //   return;
+    // }
+    // setSelectedAssessmentForQuestions(assessment);
+    // setShowQuestionsViewModal(true);
   };
 
   const closeQuestionsViewModal = () => {
@@ -325,57 +434,106 @@ const AssessmentManagementSystem = () => {
     setSelectedAssessmentForQuestions(null);
   };
 
-  const deleteQuestion = (questionId) => {
-    if (!selectedAssessmentForQuestions) return;
-    
-    if (window.confirm('Are you sure you want to delete this question?')) {
-      setAssessments(prev => prev.map(assessment => {
-        if (assessment.id === selectedAssessmentForQuestions.id) {
-          return {
-            ...assessment,
-            questions: assessment.questions.filter(q => q.id !== questionId)
-          };
-        }
-        return assessment;
-      }));
+  const deleteQuestion =async (firebaseId,questionId) => {
+    console.log("question id",fileId,questionId,selectedAssessmentForQuestions.firebaseId);
+if (!firebaseId) {
+    alert("Error: Missing firebaseId");
+    return;
+  }
 
-      setSelectedAssessmentForQuestions(prev => ({
-        ...prev,
-        questions: prev.questions.filter(q => q.id !== questionId)
-      }));
-      
-      alert('Question deleted successfully!');
+  if (!window.confirm("Are you sure you want to delete this question?")) return;
+
+  try {
+    // ✅ Find assessment by firebaseId
+    const assessment = assessments.find((a) => a.firebaseId === firebaseId);
+    if (!assessment) {
+      alert("Assessment not found");
+      return;
     }
-  };
 
-  const activateAssessmentNow = (assessmentId) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
+    // ✅ Remove question locally
+    const updatedQuestions = (assessment.questions || []).filter(
+      (q) => q.id !== questionId
+    );
+
+    // ✅ Update Firestore (always use firebaseId)
+    const assessmentRef = doc(db, "assessments", firebaseId);
+    await updateDoc(assessmentRef, {
+      questions: updatedQuestions,
+    });
+
+    // ✅ Update local state
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.firebaseId === firebaseId ? { ...a, questions: updatedQuestions } : a
+      )
+    );
+
+    // ✅ Update selectedAssessmentForQuestions if it's the same doc
+    if (selectedAssessmentForQuestions?.firebaseId === firebaseId) {
+      setSelectedAssessmentForQuestions((prev) => ({
+        ...prev!,
+        questions: updatedQuestions,
+      }));
+    }
+
+    alert("Question deleted successfully!");
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    alert("Failed to delete question. Please try again.");
+  }
+}
+
+  const activateAssessmentNow = async(assessmentId) => {
+    console.log('firebase assessment id',assessmentId);
+    // log all ids in state
+  
+    const assessment = assessments.find(a => a.firebaseId === assessmentId);
     if (!assessment) {
       alert('Error: Assessment not found!');
       return;
     }
     
     const now = new Date();
-    const currentStart = new Date(assessment.startDate);
-    const currentEnd = new Date(assessment.endDate);
     
-    if (now >= currentStart && now <= currentEnd) {
-      alert(`Assessment "${assessment.title}" is already active!`);
-      return;
+
+    console.log("assessment status",assessment.status);
+
+
+    if (assessment.status === "scheduled" ) {
+    alert(`Assessment "${assessment.title}" is already scheduled!`);
+    return;
+  }
+    // if (now >= currentStart && now <= currentEnd) {
+    //   alert(`Assessment "${assessment.title}" is already active!`);
+    //   return;
+    // }
+    
+    if (window.confirm(`scheduled "${assessment.title}" immediately?`)) {
+      const newStartDate = new Date(now.getTime() - 60000).toISOString();
+
+    // 1. Update state
+    setAssessments(prev =>
+      prev.map(a =>
+        a.firebaseId === assessmentId
+          ? { ...a, startDate: newStartDate, status: "scheduled" }
+          : a
+      )
+    );
+
+    // 2. Update Firestore
+   try {
+      const assessmentRef = doc(db, "assessments", assessmentId);
+      await updateDoc(assessmentRef, {
+        startDate: newStartDate,
+        status: "scheduled"
+      });
+      alert(`Assessment "${assessment.title}" is now scheduled!`);
+    } catch (error) {
+      console.error("Error activating assessment:", error);
+      alert("Failed to activate assessment. See console for details.");
     }
-    
-    if (window.confirm(`Activate "${assessment.title}" immediately?`)) {
-      setAssessments(prev => prev.map(a => {
-        if (a.id === assessmentId) {
-          return {
-            ...a,
-            startDate: new Date(now.getTime() - 60000).toISOString()
-          };
-        }
-        return a;
-      }));
       
-      alert(`Assessment "${assessment.title}" is now ACTIVE!`);
     }
   };
 
@@ -1046,6 +1204,7 @@ const AssessmentManagementSystem = () => {
     <div>
       <h3>Manage Assessments</h3>
       
+
       {assessments.length === 0 ? (
         <div className="question-card">
           <h4>No Assessments Found</h4>
@@ -1060,22 +1219,24 @@ const AssessmentManagementSystem = () => {
           const start = new Date(assessment.startDate);
           const end = new Date(assessment.endDate);
           
-          let status = 'Scheduled';
+          // let status = 'Scheduled';
           let statusClass = 'status-pending';
           
           if (now >= start && now <= end) {
-            status = 'Active';
+            // status = 'Active';
             statusClass = 'status-open';
           } else if (now > end) {
-            status = 'Closed';
+            // status = 'Closed';
             statusClass = 'status-closed';
           }
 
+          console.log('assessment id firebase',assessment.firebaseId);
+          // setCurrentAssessmentId(assessment.firebaseId);
           return (
             <div key={assessment.id} className="question-card">
               <div className="question-header">
                 <h4>📝 {assessment.title}</h4>
-                <span className={`status-badge ${statusClass}`}>{status}</span>
+                <span className={`status-badge ${statusClass}`}>{assessment.status}</span>
               </div>
               <p>{assessment.description}</p>
               <div className="question-meta">
@@ -1091,40 +1252,40 @@ const AssessmentManagementSystem = () => {
               <div style={{ marginTop: '15px' }}>
                 <button 
                   className="btn" 
-                  onClick={() => addQuestionToAssessment(assessment.id)}
+                  onClick={() => addQuestionToAssessment(assessment.firebaseId,assessment.id)}
                 >
                   Add Question
                 </button>
                 <button 
                   className="btn btn-secondary" 
-                  onClick={() => viewAssessmentQuestions(assessment.id)}
+                  onClick={() => viewAssessmentQuestions(assessment.firebaseId)}
                 >
                   View Questions
                 </button>
                 <button 
                   className="btn btn-success" 
-                  onClick={() => activateAssessmentNow(assessment.id)}
+                  onClick={() => activateAssessmentNow(assessment.firebaseId)}
                 >
                   🚀 Activate Now
                 </button>
                 {!assessment.assignedStudents || assessment.assignedStudents.length === 0 ? (
                   <button 
                     className="btn btn-success" 
-                    onClick={() => assignToSpecificStudents(assessment.id)}
+                    onClick={() => assignToSpecificStudents(assessment.firebaseId)}
                   >
                     Assign to Specific Students
                   </button>
                 ) : (
                   <button 
                     className="btn btn-success" 
-                    onClick={() => assignToAllStudents(assessment.id)}
+                    onClick={() => assignToAllStudents(assessment.firebaseId)}
                   >
                     Assign to All Students
                   </button>
                 )}
                 <button 
                   className="btn btn-danger" 
-                  onClick={() => deleteAssessment(assessment.id)}
+                  onClick={() => deleteAssessment(assessment.firebaseId)}
                 >
                   Delete
                 </button>
@@ -2041,7 +2202,7 @@ const AssessmentManagementSystem = () => {
                 {question.instructions && <p><strong>Instructions:</strong> {question.instructions}</p>}
                 <button 
                   className="btn btn-danger" 
-                  onClick={() => deleteQuestion(question.id)}
+                  onClick={() => deleteQuestion(selectedAssessmentForQuestions.firebaseId,question.id)}
                   style={{ marginTop: '10px' }}
                 >
                   Delete Question
