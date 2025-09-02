@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Check, X, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { db } from "./firebaseConfig";
 
 const StudentRegistrationForm = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -23,6 +28,7 @@ const StudentRegistrationForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const steps = [
     { 
@@ -74,6 +80,85 @@ const StudentRegistrationForm = () => {
       placeholder: 'Enter your password'
     }
   ];
+
+  // Check if email or mobile already exists
+  const checkIfUserExists = async (email, mobile) => {
+    try {
+      // Check email
+      const emailQuery = query(collection(db, "students"), where("email", "==", email));
+      const emailSnapshot = await getDocs(emailQuery);
+      
+      // Check mobile
+      const mobileQuery = query(collection(db, "students"), where("mobile", "==", mobile));
+      const mobileSnapshot = await getDocs(mobileQuery);
+      
+      return {
+        emailExists: !emailSnapshot.empty,
+        mobileExists: !mobileSnapshot.empty
+      };
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      return { emailExists: false, mobileExists: false };
+    }
+  };
+
+  // Save student to Firebase
+  const saveStudentToFirebase = async () => {
+    setIsSubmitting(true);
+    setErrors({});
+    
+    try {
+      // Check if user already exists
+      const { emailExists, mobileExists } = await checkIfUserExists(formData.email, formData.mobile);
+      
+      if (emailExists || mobileExists) {
+        setErrors({
+          duplicate: `${emailExists ? 'Email' : ''}${emailExists && mobileExists ? ' and ' : ''}${mobileExists ? 'Mobile number' : ''} already registered`
+        });
+        setIsSubmitting(false);
+        return false;
+      }
+
+      // Create student document
+      const studentData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        email: formData.email.toLowerCase().trim(),
+        mobile: formData.mobile.trim(),
+        // Note: In production, hash the password before storing
+        password: formData.password, // Consider using bcrypt or similar for hashing
+        username: formData.email.toLowerCase().trim(), // Use email as username
+        role: 'student',
+        isActive: true,
+        isEmailVerified: true, // Since we verified mobile, we can set this
+        isMobileVerified: true,
+        registrationDate: new Date().toISOString(),
+        lastLogin: null,
+        profilePicture: null,
+        dateOfBirth: null,
+        address: null,
+        coursesEnrolled: [],
+        assessmentsTaken: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Add to Firestore
+      const docRef = await addDoc(collection(db, "students"), studentData);
+      console.log("Student registered with ID:", docRef.id);
+      
+      setIsSubmitting(false);
+      return true;
+    } catch (error) {
+      console.error("Error saving student to Firebase:", error);
+      setErrors({ 
+        firebase: "Failed to save registration. Please try again." 
+      });
+      setIsSubmitting(false);
+      return false;
+    }
+  };
 
   // Password strength checker
   const getPasswordStrength = (password) => {
@@ -142,6 +227,11 @@ const StudentRegistrationForm = () => {
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
+    
+    // Clear errors when user starts typing
+    if (errors.duplicate || errors.firebase) {
+      setErrors({});
+    }
   };
 
   const generateOtp = () => {
@@ -162,7 +252,7 @@ const StudentRegistrationForm = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const currentStepData = steps[currentStep];
     
     // Auto-send OTP when mobile step is valid
@@ -174,15 +264,32 @@ const StudentRegistrationForm = () => {
       if (currentStep < steps.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        setIsCompleted(true);
+        // Final step - save to Firebase
+        const success = await saveStudentToFirebase();
+        if (success) {
+          setIsCompleted(true);
+        }
       }
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isSubmitting) {
       handleContinue();
     }
+  };
+
+  const resetForm = () => {
+    setIsCompleted(false);
+    setCurrentStep(0);
+    setIsSubmitting(false);
+    setFormData({
+      firstName: '', lastName: '', mobile: '', email: '', password: '', confirmPassword: ''
+    });
+    setOtpData({
+      otp: '', generatedOtp: '', isOtpSent: false, isOtpVerified: false, otpTimer: 0
+    });
+    setErrors({});
   };
 
   if (isCompleted) {
@@ -194,22 +301,24 @@ const StudentRegistrationForm = () => {
               <Check className="w-10 h-10 text-green-600" />
             </div>
             <h1 className="text-3xl font-semibold text-gray-800 mb-4 font-sans">🎉 Welcome aboard, {formData.firstName}!</h1>
-            <p className="text-lg text-gray-600 mb-10 font-sans">Your student registration has been completed successfully.</p>
-            <button 
-              onClick={() => {
-                setIsCompleted(false);
-                setCurrentStep(0);
-                setFormData({
-                  firstName: '', lastName: '', mobile: '', email: '', password: '', confirmPassword: ''
-                });
-                setOtpData({
-                  otp: '', generatedOtp: '', isOtpSent: false, isOtpVerified: false, otpTimer: 0
-                });
-              }}
-              className="bg-purple-600 text-white px-10 py-4 rounded-xl text-base font-medium hover:bg-purple-700 transition-colors shadow-lg font-sans"
-            >
-              Register Another Student
-            </button>
+            <p className="text-lg text-gray-600 mb-6 font-sans">Your student registration has been completed successfully.</p>
+            <p className="text-sm text-gray-500 mb-10 font-sans">
+              You can now login with email: <strong>{formData.email}</strong>
+            </p>
+            <div className="space-x-4">
+              <button 
+                onClick={() => navigate('/')}
+                className="bg-purple-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-purple-700 transition-colors shadow-lg font-sans"
+              >
+                Go to Login
+              </button>
+              <button 
+                onClick={resetForm}
+                className="bg-gray-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-gray-700 transition-colors shadow-lg font-sans"
+              >
+                Register Another Student
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +327,7 @@ const StudentRegistrationForm = () => {
 
   const currentStepData = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
-  const canContinue = validateStep(currentStep);
+  const canContinue = validateStep(currentStep) && !isSubmitting;
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
@@ -229,6 +338,14 @@ const StudentRegistrationForm = () => {
           <div className="px-12 pt-12 pb-8 text-center">
             <h1 className="text-2xl font-semibold text-purple-600 mb-2 font-sans">Student Registration System</h1>
             <p className="text-gray-600 text-base font-sans">Comprehensive platform for student enrollment</p>
+            
+            {/* Back to Login Link */}
+            <button
+              onClick={() => navigate('/')}
+              className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-2 underline"
+            >
+              ← Back to Login
+            </button>
           </div>
 
           {/* Progress */}
@@ -243,6 +360,18 @@ const StudentRegistrationForm = () => {
               />
             </div>
           </div>
+
+          {/* Error Messages */}
+          {(errors.duplicate || errors.firebase) && (
+            <div className="px-12 mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p className="text-red-700 font-medium flex items-center font-sans text-sm">
+                  <X className="w-5 h-5 mr-2" />
+                  {errors.duplicate || errors.firebase}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Question */}
           <div className="px-12 mb-12">
@@ -416,42 +545,6 @@ const StudentRegistrationForm = () => {
                   </div>
                 )}
               </div>
-            ) : currentStepData.id === 'confirmPassword' ? (
-              <div>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="w-full px-6 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xl pr-16"
-                    placeholder={currentStepData.placeholder}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
-                  </button>
-                </div>
-                {formData.confirmPassword && (
-                  <div className="mt-4">
-                    {formData.password === formData.confirmPassword ? (
-                      <p className="text-green-600 text-sm flex items-center justify-center">
-                        <Check className="w-4 h-4 mr-2" />
-                        Passwords match perfectly!
-                      </p>
-                    ) : (
-                      <p className="text-red-500 text-sm flex items-center justify-center">
-                        <X className="w-4 h-4 mr-2" />
-                        Passwords don't match
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
             ) : (
               <input
                 type={currentStepData.type}
@@ -470,13 +563,20 @@ const StudentRegistrationForm = () => {
             <button
               onClick={handleContinue}
               disabled={!canContinue}
-              className={`w-full py-4 rounded-xl font-medium text-lg transition-all shadow-lg font-sans ${
+              className={`w-full py-4 rounded-xl font-medium text-lg transition-all shadow-lg font-sans flex items-center justify-center ${
                 canContinue 
                   ? 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-xl' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {currentStep === steps.length - 1 ? 'Complete Registration' : 'Continue'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Saving Registration...
+                </>
+              ) : (
+                currentStep === steps.length - 1 ? 'Complete Registration' : 'Continue'
+              )}
             </button>
           </div>
         </div>
