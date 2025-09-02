@@ -1052,7 +1052,7 @@ const viewMyAnswers = (submissionId) => {
       <div className="header">
         <h1>🎓 Assessment Management System</h1>
         <p>Comprehensive platform for creating and managing assessments</p>
-        <div className="demo-info">
+        {/* <div className="demo-info">
           <p style={{ fontSize: '14px', color: '#666', marginTop: '15px' }}>
             🚀 <strong>Try the Demo:</strong>
           </p>
@@ -1080,7 +1080,7 @@ const viewMyAnswers = (submissionId) => {
               Student Demo
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
       
       <div style={{ maxWidth: '400px', margin: '0 auto' }}>
