@@ -324,6 +324,7 @@ const AssessmentManagementSystem = () => {
       if (maxScoreRef.current) maxScoreRef.current.value = "100";
       clearStudentSelection();
       setSmartDefaults();
+      fetchAssessments();
       setActivePreset(null);
 
       alert("Assessment created successfully!");
