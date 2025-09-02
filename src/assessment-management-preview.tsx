@@ -1104,7 +1104,13 @@ const viewMyAnswers = (submissionId) => {
         </div>
         
         <button className="btn" onClick={login} style={{ width: '100%' }}>Login</button>
+         <div class="auth-toggle">
+                    <p>New Student? <button onclick="showStudentRegistration()">Register with Mobile OTP</button></p>
+                
+                </div>
+                
       </div>
+      
     </div>
   );
 
