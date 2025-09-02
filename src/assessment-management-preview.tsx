@@ -37,8 +37,8 @@ const AssessmentManagementSystem = () => {
 
 
   const [dbStudents, setDbStudents] = useState([]);
-const [studentSearchEmail, setStudentSearchEmail] = useState('');
-const [isSearching, setIsSearching] = useState(false);
+  const [studentSearchEmail, setStudentSearchEmail] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   // Fetch assessments from Firestore
   const fetchAssessments = useCallback(async () => {
     try {
@@ -92,97 +92,98 @@ const [isSearching, setIsSearching] = useState(false);
   const questionInstructionsRef = useRef();
 
   // Authentication functions
-  const login = async() => {
-    const role = userRoleRef.current?.value;
+  const login = async () => {
+    // const role = userRoleRef.current?.value;
     const email = emailRef.current?.value;
     const password = passwordRef.current?.value;
 
-    if (!role || !email || !password) {
+    if (!email || !password) {
       alert('Please fill in all fields');
       return;
     }
 
-   try {
-    let user = null;
+    try {
+      let user = null;
 
-    if (role === 'admin') {
+
       // Static admin credentials
       if (email === 'admin' && password === 'admin123') {
+        
         user = {
           username: 'admin',
           email: 'admin',
           role: 'admin',
           name: 'Administrator'
         };
+          setCurrentView('admin');
+
       } else {
-        alert('Invalid admin credentials');
-        return;
+
+
+        // Query students collection from Firebase
+        const studentQuery = query(
+          collection(db, "students"),
+          where("email", "==", email.toLowerCase())
+        );
+
+        const querySnapshot = await getDocs(studentQuery);
+
+        if (querySnapshot.empty) {
+          alert('No account found with this email address');
+          return;
+        }
+
+        const studentDoc = querySnapshot.docs[0];
+        const studentData = studentDoc.data();
+
+        // Check if account is active
+        // if (!studentData.isActive) {
+        //   alert('Your account has been deactivated. Please contact administrator.');
+        //   return;
+        // }
+
+        // Verify password
+        if (studentData.password !== password) {
+          alert('Incorrect password');
+          return;
+        }
+
+        // Update last login timestamp
+        await updateDoc(doc(db, "students", studentDoc.id), {
+          lastLogin: new Date().toISOString()
+        });
+
+        // Set user data from database
+        user = {
+          id: studentDoc.id,
+          username: studentData.fullName, // or studentData.username if you have it
+          email: studentData.email,
+          role: studentData.role || 'student',
+          name: studentData.fullName,
+          firstName: studentData.firstName,
+          lastName: studentData.lastName
+        };
+                  setCurrentView('student');
+
+
       }
-    } else if (role === 'student') {
-      // Query students collection from Firebase
-      const studentQuery = query(
-        collection(db, "students"), 
-        where("email", "==", email.toLowerCase())
-      );
-      
-      const querySnapshot = await getDocs(studentQuery);
-      
-      if (querySnapshot.empty) {
-        alert('No account found with this email address');
-        return;
+        if (user) {
+          setCurrentUser(user);
+
+
+
+
+          // Clear form
+          if (userRoleRef.current) userRoleRef.current.value = '';
+          if (emailRef.current) emailRef.current.value = '';
+          if (passwordRef.current) passwordRef.current.value = '';
+        
       }
-      
-      const studentDoc = querySnapshot.docs[0];
-      const studentData = studentDoc.data();
-      
-      // Check if account is active
-      // if (!studentData.isActive) {
-      //   alert('Your account has been deactivated. Please contact administrator.');
-      //   return;
-      // }
-      
-      // Verify password
-      if (studentData.password !== password) {
-        alert('Incorrect password');
-        return;
-      }
-      
-      // Update last login timestamp
-      await updateDoc(doc(db, "students", studentDoc.id), {
-        lastLogin: new Date().toISOString()
-      });
-      
-      // Set user data from database
-      user = {
-        id: studentDoc.id,
-        username: studentData.fullName, // or studentData.username if you have it
-        email: studentData.email,
-        role: studentData.role || 'student',
-        name: studentData.fullName,
-        firstName: studentData.firstName,
-        lastName: studentData.lastName
-      };
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
     }
 
-    if (user) {
-      setCurrentUser(user);
-      
-      if (role === 'admin') {
-        setCurrentView('admin');
-      } else {
-        setCurrentView('student');
-      }
-      
-      // Clear form
-      if (userRoleRef.current) userRoleRef.current.value = '';
-      if (emailRef.current) emailRef.current.value = '';
-      if (passwordRef.current) passwordRef.current.value = '';
-    }
-    
-  } catch (error) {
-    console.error('Login error:', error);
-    alert('Login failed. Please try again.');
-  }
   };
 
   const logout = () => {
@@ -786,7 +787,7 @@ const [isSearching, setIsSearching] = useState(false);
   const loadStudentAssessments = () => {
     if (!currentUser) return [];
 
-    console.log("current user",currentUser);
+    console.log("current user", currentUser);
     return assessments.filter(assessment => {
       return !assessment.assignedStudents ||
         assessment.assignedStudents.length === 0 ||
@@ -1168,14 +1169,14 @@ const [isSearching, setIsSearching] = useState(false);
       </div>
 
       <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-        <div className="form-group">
+        {/* <div className="form-group">
           <label htmlFor="userRole">Select Role:</label>
           <select ref={userRoleRef} id="userRole">
             <option value="">Choose your role</option>
             <option value="admin">Administrator</option>
             <option value="student">Student</option>
           </select>
-        </div>
+        </div> */}
 
         <div className="form-group">
           <label htmlFor="email">Email:</label>
@@ -1207,8 +1208,8 @@ const [isSearching, setIsSearching] = useState(false);
               onMouseOut={(e) => e.target.style.color = '#667eea'}
             >
               Register with Mobile OTP
-            </button>                    
-              </p>
+            </button>
+          </p>
 
         </div>
 
@@ -1292,337 +1293,337 @@ const [isSearching, setIsSearching] = useState(false);
   };
 
   // Render Create Assessment Tab
- // Render Create Assessment Tab
-const renderCreateAssessment = () => {
-  // Only show active students
-  const activeStudents = dbStudents.filter(student => student.isActive);
+  // Render Create Assessment Tab
+  const renderCreateAssessment = () => {
+    // Only show active students
+    const activeStudents = dbStudents.filter(student => student.isActive);
 
-  return (
-    <div>
-      <h3>Create New Assessment</h3>
+    return (
+      <div>
+        <h3>Create New Assessment</h3>
 
-      <div className="form-group">
-        <label htmlFor="assessmentTitle">Assessment Title:</label>
-        <input ref={assessmentTitleRef} type="text" id="assessmentTitle" placeholder="Enter assessment title" />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="assessmentDescription">Description:</label>
-        <textarea ref={assessmentDescriptionRef} id="assessmentDescription" rows="3" placeholder="Enter assessment description"></textarea>
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="maxScore">Maximum Score:</label>
-        <input ref={maxScoreRef} type="number" id="maxScore" placeholder="Enter maximum score" defaultValue="100" style={{ width: '150px' }} />
-      </div>
-
-      <div className="schedule-section">
-        <h4>📅 Schedule</h4>
-
-        <div className="quick-presets">
-          <label>Quick Setup:</label>
-          <div className="preset-buttons">
-            <button
-              type="button"
-              className={`preset-btn ${activePreset === 'now-1hour' ? 'active' : ''}`}
-              onClick={() => setQuickPreset('now-1hour')}
-            >
-              Now → 1 Hour
-            </button>
-            <button
-              type="button"
-              className={`preset-btn ${activePreset === 'now-1day' ? 'active' : ''}`}
-              onClick={() => setQuickPreset('now-1day')}
-            >
-              Now → 1 Day
-            </button>
-            <button
-              type="button"
-              className={`preset-btn ${activePreset === 'tomorrow-1week' ? 'active' : ''}`}
-              onClick={() => setQuickPreset('tomorrow-1week')}
-            >
-              Tomorrow → 1 Week
-            </button>
-          </div>
+        <div className="form-group">
+          <label htmlFor="assessmentTitle">Assessment Title:</label>
+          <input ref={assessmentTitleRef} type="text" id="assessmentTitle" placeholder="Enter assessment title" />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
-          <div className="form-group">
-            <label htmlFor="startDate">Start Date:</label>
-            <input ref={startDateRef} type="datetime-local" id="startDate" />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="endDate">End Date:</label>
-            <input ref={endDateRef} type="datetime-local" id="endDate" />
-          </div>
+        <div className="form-group">
+          <label htmlFor="assessmentDescription">Description:</label>
+          <textarea ref={assessmentDescriptionRef} id="assessmentDescription" rows="3" placeholder="Enter assessment description"></textarea>
         </div>
-      </div>
 
-      <div className="student-selection">
-        <label><strong>👥 Assign to Students:</strong></label>
-        <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-          Select students who can take this assessment (leave none selected for ALL students)
-        </p>
+        <div className="form-group">
+          <label htmlFor="maxScore">Maximum Score:</label>
+          <input ref={maxScoreRef} type="number" id="maxScore" placeholder="Enter maximum score" defaultValue="100" style={{ width: '150px' }} />
+        </div>
 
-        <div className="student-list" id="studentAssignmentList">
-          {activeStudents.length === 0 ? (
-            <p style={{ color: 'red' }}>⚠️ No active students available</p>
-          ) : (
-            activeStudents.map(student => (
-              <div
-                key={student.id}
-                className="student-item"
-                data-student={student.email}
-                onClick={() => toggleStudentSelection(student.email)}
+        <div className="schedule-section">
+          <h4>📅 Schedule</h4>
+
+          <div className="quick-presets">
+            <label>Quick Setup:</label>
+            <div className="preset-buttons">
+              <button
+                type="button"
+                className={`preset-btn ${activePreset === 'now-1hour' ? 'active' : ''}`}
+                onClick={() => setQuickPreset('now-1hour')}
               >
-                {student.fullName }
-              </div>
-            ))
-          )}
-        </div>
-
-        <div id="selectionSummary" style={{
-          margin: '10px 0',
-          padding: '8px',
-          background: '#f8f9fa',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontWeight: 'bold'
-        }}>
-          No students selected - assessment will be available to ALL students
-        </div>
-
-        <div style={{ marginTop: '10px' }}>
-          <button type="button" className="btn btn-secondary" onClick={selectAllStudents}>
-            Select All
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={clearStudentSelection}>
-            Clear All
-          </button>
-        </div>
-      </div>
-
-      <button className="btn" onClick={createAssessment}>Create Assessment</button>
-    </div>
-  );
-};
-
-const fetchStudents = useCallback(async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "students"));
-    const studentsList = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    setDbStudents(studentsList);
-    console.log("Fetched students from database:", studentsList);
-  } catch (error) {
-    console.error("Error fetching students:", error);
-  }
-}, []);
-
-// Call fetchStudents when admin dashboard loads
-useEffect(() => {
-  if (currentUser?.role === 'admin') {
-    fetchStudents();
-  }
-}, [currentUser, fetchStudents]);
-
-// Add student by email search
-const addStudentByEmail = async () => {
-  if (!studentSearchEmail.trim()) {
-    alert('Please enter an email address');
-    return;
-  }
-
-  setIsSearching(true);
-  
-  try {
-    const studentQuery = query(
-      collection(db, "students"), 
-      where("email", "==", studentSearchEmail.toLowerCase().trim())
-    );
-    
-    const querySnapshot = await getDocs(studentQuery);
-    
-    if (querySnapshot.empty) {
-      alert('No student found with this email address');
-      setIsSearching(false);
-      return;
-    }
-    
-    const studentDoc = querySnapshot.docs[0];
-    const studentData = studentDoc.data();
-    
-    // Check if already in the list
-    if (dbStudents.some(s => s.id === studentDoc.id)) {
-      alert('Student is already in the list');
-      setIsSearching(false);
-      return;
-    }
-    
-    // Add to local state
-    setDbStudents(prev => [...prev, { id: studentDoc.id, ...studentData }]);
-    setStudentSearchEmail('');
-    alert(`Added student: ${studentData.fullName} (${studentData.email})`);
-    
-  } catch (error) {
-    console.error("Error searching for student:", error);
-    alert('Error searching for student');
-  }
-  
-  setIsSearching(false);
-};
-const toggleStudentStatus = async (studentId, currentStatus) => {
-  const action = currentStatus ? 'deactivate' : 'activate';
-  
-  if (!window.confirm(`Are you sure you want to ${action} this student?`)) {
-    return;
-  }
-
-  try {
-    await updateDoc(doc(db, "students", studentId), {
-      isActive: !currentStatus,
-      updatedAt: new Date().toISOString()
-    });
-    
-    // Update local state
-    setDbStudents(prev => 
-      prev.map(student => 
-        student.id === studentId 
-          ? { ...student, isActive: !currentStatus }
-          : student
-      )
-    );
-    
-    alert(`Student ${action}d successfully!`);
-    
-  } catch (error) {
-    console.error(`Error ${action}ing student:`, error);
-    alert(`Failed to ${action} student`);
-  }
-};
-  // Render Manage Students Tab
-// Updated renderManageStudents function
-const renderManageStudents = () => (
-  <div>
-    <h3>Manage Students</h3>
-    
-    {/* Search and Add Student */}
-    <div className="form-group">
-      <label htmlFor="studentSearch">Add Student by Email:</label>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <input 
-          type="email" 
-          id="studentSearch"
-          placeholder="Enter student email address"
-          value={studentSearchEmail}
-          onChange={(e) => setStudentSearchEmail(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && addStudentByEmail()}
-        />
-        <button 
-          className="btn" 
-          onClick={addStudentByEmail}
-          disabled={isSearching}
-        >
-          {isSearching ? 'Searching...' : 'Add Student'}
-        </button>
-      </div>
-      <small style={{ color: '#666', fontSize: '12px' }}>
-        Search for registered students by their email address
-      </small>
-    </div>
-
-    {/* Refresh Students Button */}
-    <div style={{ marginBottom: '20px' }}>
-      <button className="btn btn-secondary" onClick={fetchStudents}>
-        🔄 Refresh Student List
-      </button>
-    </div>
-
-    {/* Students List */}
-    <div>
-      <h4>Registered Students ({dbStudents.length})</h4>
-      
-      {dbStudents.length === 0 ? (
-        <div className="question-card">
-          <h4>No Students Found</h4>
-          <p>No students are registered in the system yet.</p>
-        </div>
-      ) : (
-        dbStudents.map(student => (
-          <div key={student.id} className="question-card">
-            <div className="question-header">
-              <div>
-                <h4>👤 {student.fullName || `${student.firstName} ${student.lastName}`}</h4>
-                <div className="question-meta">
-                  <strong>Email:</strong> {student.email}<br />
-                  <strong>Status:</strong> 
-                  <span style={{ 
-                    color: student.isActive ? '#28a745' : '#dc3545',
-                    fontWeight: 'bold',
-                    marginLeft: '5px'
-                  }}>
-                    {student.isActive ? 'Active' : 'Inactive'}
-                  </span><br />
-                  <strong>Registered:</strong> {new Date(student.registrationDate || student.createdAt).toLocaleDateString()}<br />
-                  {student.lastLogin && (
-                    <><strong>Last Login:</strong> {new Date(student.lastLogin).toLocaleString()}<br /></>
-                  )}
-                </div>
-              </div>
-              <div>
-                <button 
-                  className={`btn ${student.isActive ? 'btn-warning' : 'btn-success'}`}
-                  onClick={() => toggleStudentStatus(student.id, student.isActive)}
-                >
-                  {student.isActive ? 'Deactivate' : 'Activate'}
-                </button>
-              </div>
+                Now → 1 Hour
+              </button>
+              <button
+                type="button"
+                className={`preset-btn ${activePreset === 'now-1day' ? 'active' : ''}`}
+                onClick={() => setQuickPreset('now-1day')}
+              >
+                Now → 1 Day
+              </button>
+              <button
+                type="button"
+                className={`preset-btn ${activePreset === 'tomorrow-1week' ? 'active' : ''}`}
+                onClick={() => setQuickPreset('tomorrow-1week')}
+              >
+                Tomorrow → 1 Week
+              </button>
             </div>
           </div>
-        ))
-      )}
-    </div>
 
-    {/* Statistics */}
-    <div style={{ 
-      background: '#f8f9fa', 
-      padding: '15px', 
-      borderRadius: '8px', 
-      marginTop: '20px' 
-    }}>
-      <h4>Student Statistics</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#667eea' }}>
-            {dbStudents.length}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+            <div className="form-group">
+              <label htmlFor="startDate">Start Date:</label>
+              <input ref={startDateRef} type="datetime-local" id="startDate" />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="endDate">End Date:</label>
+              <input ref={endDateRef} type="datetime-local" id="endDate" />
+            </div>
           </div>
-          <div>Total Students</div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#28a745' }}>
-            {dbStudents.filter(s => s.isActive).length}
+
+        <div className="student-selection">
+          <label><strong>👥 Assign to Students:</strong></label>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+            Select students who can take this assessment (leave none selected for ALL students)
+          </p>
+
+          <div className="student-list" id="studentAssignmentList">
+            {activeStudents.length === 0 ? (
+              <p style={{ color: 'red' }}>⚠️ No active students available</p>
+            ) : (
+              activeStudents.map(student => (
+                <div
+                  key={student.id}
+                  className="student-item"
+                  data-student={student.email}
+                  onClick={() => toggleStudentSelection(student.email)}
+                >
+                  {student.fullName}
+                </div>
+              ))
+            )}
           </div>
-          <div>Active Students</div>
+
+          <div id="selectionSummary" style={{
+            margin: '10px 0',
+            padding: '8px',
+            background: '#f8f9fa',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}>
+            No students selected - assessment will be available to ALL students
+          </div>
+
+          <div style={{ marginTop: '10px' }}>
+            <button type="button" className="btn btn-secondary" onClick={selectAllStudents}>
+              Select All
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={clearStudentSelection}>
+              Clear All
+            </button>
+          </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#dc3545' }}>
-            {dbStudents.filter(s => !s.isActive).length}
-          </div>
-          <div>Inactive Students</div>
+
+        <button className="btn" onClick={createAssessment}>Create Assessment</button>
+      </div>
+    );
+  };
+
+  const fetchStudents = useCallback(async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "students"));
+      const studentsList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setDbStudents(studentsList);
+      console.log("Fetched students from database:", studentsList);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  }, []);
+
+  // Call fetchStudents when admin dashboard loads
+  useEffect(() => {
+    if (currentUser?.role === 'admin') {
+      fetchStudents();
+    }
+  }, [currentUser, fetchStudents]);
+
+  // Add student by email search
+  const addStudentByEmail = async () => {
+    if (!studentSearchEmail.trim()) {
+      alert('Please enter an email address');
+      return;
+    }
+
+    setIsSearching(true);
+
+    try {
+      const studentQuery = query(
+        collection(db, "students"),
+        where("email", "==", studentSearchEmail.toLowerCase().trim())
+      );
+
+      const querySnapshot = await getDocs(studentQuery);
+
+      if (querySnapshot.empty) {
+        alert('No student found with this email address');
+        setIsSearching(false);
+        return;
+      }
+
+      const studentDoc = querySnapshot.docs[0];
+      const studentData = studentDoc.data();
+
+      // Check if already in the list
+      if (dbStudents.some(s => s.id === studentDoc.id)) {
+        alert('Student is already in the list');
+        setIsSearching(false);
+        return;
+      }
+
+      // Add to local state
+      setDbStudents(prev => [...prev, { id: studentDoc.id, ...studentData }]);
+      setStudentSearchEmail('');
+      alert(`Added student: ${studentData.fullName} (${studentData.email})`);
+
+    } catch (error) {
+      console.error("Error searching for student:", error);
+      alert('Error searching for student');
+    }
+
+    setIsSearching(false);
+  };
+  const toggleStudentStatus = async (studentId, currentStatus) => {
+    const action = currentStatus ? 'deactivate' : 'activate';
+
+    if (!window.confirm(`Are you sure you want to ${action} this student?`)) {
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "students", studentId), {
+        isActive: !currentStatus,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setDbStudents(prev =>
+        prev.map(student =>
+          student.id === studentId
+            ? { ...student, isActive: !currentStatus }
+            : student
+        )
+      );
+
+      alert(`Student ${action}d successfully!`);
+
+    } catch (error) {
+      console.error(`Error ${action}ing student:`, error);
+      alert(`Failed to ${action} student`);
+    }
+  };
+  // Render Manage Students Tab
+  // Updated renderManageStudents function
+  const renderManageStudents = () => (
+    <div>
+      <h3>Manage Students</h3>
+
+      {/* Search and Add Student */}
+      <div className="form-group">
+        <label htmlFor="studentSearch">Add Student by Email:</label>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <input
+            type="email"
+            id="studentSearch"
+            placeholder="Enter student email address"
+            value={studentSearchEmail}
+            onChange={(e) => setStudentSearchEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addStudentByEmail()}
+          />
+          <button
+            className="btn"
+            onClick={addStudentByEmail}
+            disabled={isSearching}
+          >
+            {isSearching ? 'Searching...' : 'Add Student'}
+          </button>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#6f42c1' }}>
-            {dbStudents.filter(s => s.lastLogin).length}
+        <small style={{ color: '#666', fontSize: '12px' }}>
+          Search for registered students by their email address
+        </small>
+      </div>
+
+      {/* Refresh Students Button */}
+      <div style={{ marginBottom: '20px' }}>
+        <button className="btn btn-secondary" onClick={fetchStudents}>
+          🔄 Refresh Student List
+        </button>
+      </div>
+
+      {/* Students List */}
+      <div>
+        <h4>Registered Students ({dbStudents.length})</h4>
+
+        {dbStudents.length === 0 ? (
+          <div className="question-card">
+            <h4>No Students Found</h4>
+            <p>No students are registered in the system yet.</p>
           </div>
-          <div>Have Logged In</div>
+        ) : (
+          dbStudents.map(student => (
+            <div key={student.id} className="question-card">
+              <div className="question-header">
+                <div>
+                  <h4>👤 {student.fullName || `${student.firstName} ${student.lastName}`}</h4>
+                  <div className="question-meta">
+                    <strong>Email:</strong> {student.email}<br />
+                    <strong>Status:</strong>
+                    <span style={{
+                      color: student.isActive ? '#28a745' : '#dc3545',
+                      fontWeight: 'bold',
+                      marginLeft: '5px'
+                    }}>
+                      {student.isActive ? 'Active' : 'Inactive'}
+                    </span><br />
+                    <strong>Registered:</strong> {new Date(student.registrationDate || student.createdAt).toLocaleDateString()}<br />
+                    {student.lastLogin && (
+                      <><strong>Last Login:</strong> {new Date(student.lastLogin).toLocaleString()}<br /></>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <button
+                    className={`btn ${student.isActive ? 'btn-warning' : 'btn-success'}`}
+                    onClick={() => toggleStudentStatus(student.id, student.isActive)}
+                  >
+                    {student.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Statistics */}
+      <div style={{
+        background: '#f8f9fa',
+        padding: '15px',
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <h4>Student Statistics</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#667eea' }}>
+              {dbStudents.length}
+            </div>
+            <div>Total Students</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#28a745' }}>
+              {dbStudents.filter(s => s.isActive).length}
+            </div>
+            <div>Active Students</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#dc3545' }}>
+              {dbStudents.filter(s => !s.isActive).length}
+            </div>
+            <div>Inactive Students</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2em', fontWeight: 'bold', color: '#6f42c1' }}>
+              {dbStudents.filter(s => s.lastLogin).length}
+            </div>
+            <div>Have Logged In</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 
   // Render Manage Assessments Tab
   const renderManageAssessments = () => (
