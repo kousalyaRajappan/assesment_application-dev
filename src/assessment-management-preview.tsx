@@ -108,14 +108,14 @@ const AssessmentManagementSystem = () => {
 
       // Static admin credentials
       if (email === 'admin' && password === 'admin123') {
-        
+
         user = {
           username: 'admin',
           email: 'admin',
           role: 'admin',
           name: 'Administrator'
         };
-          setCurrentView('admin');
+        setCurrentView('admin');
 
       } else {
 
@@ -163,21 +163,21 @@ const AssessmentManagementSystem = () => {
           firstName: studentData.firstName,
           lastName: studentData.lastName
         };
-                  setCurrentView('student');
+        setCurrentView('student');
 
 
       }
-        if (user) {
-          setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
 
 
 
 
-          // Clear form
-          if (userRoleRef.current) userRoleRef.current.value = '';
-          if (emailRef.current) emailRef.current.value = '';
-          if (passwordRef.current) passwordRef.current.value = '';
-        
+        // Clear form
+        if (userRoleRef.current) userRoleRef.current.value = '';
+        if (emailRef.current) emailRef.current.value = '';
+        if (passwordRef.current) passwordRef.current.value = '';
+
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -637,133 +637,92 @@ const AssessmentManagementSystem = () => {
     }
   };
 
- // Updated assignToAllStudents function
-const assignToAllStudents = async (assessmentFirebaseId) => {
-  console.log("assign to all students");
-  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
-  if (!assessment) {
-    alert('Error: Assessment not found!');
-    return;
-  }
-
-  if (window.confirm(`Make "${assessment.title}" available to ALL students?`)) {
-    try {
-      // Update Firestore - empty array or null means all students
-      const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
-      await updateDoc(assessmentRef, {
-        assignedStudents: [], // Empty array means all students
-        updatedAt: new Date().toISOString()
-      });
-
-      // Update local state
-      setAssessments(prev => prev.map(a => {
-        if (a.firebaseId === assessmentFirebaseId) {
-          return {
-            ...a,
-            assignedStudents: []
-          };
-        }
-        return a;
-      }));
-
-      alert(`Assessment "${assessment.title}" is now available to ALL students!`);
-    } catch (error) {
-      console.error("Error updating assessment:", error);
-      alert("Failed to update assessment. Please try again.");
+  // Updated assignToAllStudents function
+  const assignToAllStudents = async (assessmentFirebaseId) => {
+    console.log("assign to all students");
+    const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+    if (!assessment) {
+      alert('Error: Assessment not found!');
+      return;
     }
-  }
-};
 
-// Updated assignToSpecificStudents function
-const assignToSpecificStudents = async (assessmentFirebaseId) => {
-  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
-  if (!assessment) {
-    alert('Error: Assessment not found!');
-    return;
-  }
+    if (window.confirm(`Make "${assessment.title}" available to ALL students?`)) {
+      try {
+        // Update Firestore - empty array or null means all students
+        const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
+        await updateDoc(assessmentRef, {
+          assignedStudents: [], // Empty array means all students
+          updatedAt: new Date().toISOString()
+        });
 
-  // Get active students for selection
-  const activeStudents = dbStudents.filter(student => student.isActive);
-  
-  if (activeStudents.length === 0) {
-    alert('No active students available for assignment.');
-    return;
-  }
+        // Update local state
+        setAssessments(prev => prev.map(a => {
+          if (a.firebaseId === assessmentFirebaseId) {
+            return {
+              ...a,
+              assignedStudents: []
+            };
+          }
+          return a;
+        }));
 
-  // For demo purposes, let's assign to first 3 students
-  // In a real implementation, you'd want to show a selection modal
-  const specificStudents = activeStudents.slice(0, Math.min(3, activeStudents.length)).map(s => s.email);
-
-  if (window.confirm(`Assign "${assessment.title}" to specific students: ${specificStudents.join(', ')}?`)) {
-    try {
-      // Update Firestore
-      const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
-      await updateDoc(assessmentRef, {
-        assignedStudents: specificStudents,
-        updatedAt: new Date().toISOString()
-      });
-
-      // Update local state
-      setAssessments(prev => prev.map(a => {
-        if (a.firebaseId === assessmentFirebaseId) {
-          return {
-            ...a,
-            assignedStudents: specificStudents
-          };
-        }
-        return a;
-      }));
-
-      alert(`Assessment "${assessment.title}" is now assigned to: ${specificStudents.join(', ')}`);
-    } catch (error) {
-      console.error("Error updating assessment:", error);
-      alert("Failed to update assessment. Please try again.");
+        alert(`Assessment "${assessment.title}" is now available to ALL students!`);
+      } catch (error) {
+        console.error("Error updating assessment:", error);
+        alert("Failed to update assessment. Please try again.");
+      }
     }
-  }
-};
+  };
 
-// Optional: More advanced function with student selection modal
-const assignToSpecificStudentsWithModal = async (assessmentFirebaseId) => {
-  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
-  if (!assessment) {
-    alert('Error: Assessment not found!');
-    return;
-  }
+  // Updated assignToSpecificStudents function
+  const assignToSpecificStudents = async (assessmentFirebaseId) => {
+    const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+    if (!assessment) {
+      alert('Error: Assessment not found!');
+      return;
+    }
 
-  const activeStudents = dbStudents.filter(student => student.isActive);
-  
-  if (activeStudents.length === 0) {
-    alert('No active students available for assignment.');
-    return;
-  }
+    // Get active students for selection
+    const activeStudents = dbStudents.filter(student => student.isActive);
 
-  // Create a simple selection interface
-  const selectedStudents = [];
-  let selectionHtml = '<div style="max-height: 300px; overflow-y: auto;">';
-  
-  activeStudents.forEach(student => {
-    const isCurrentlyAssigned = assessment.assignedStudents && assessment.assignedStudents.includes(student.email);
-    selectionHtml += `
-      <div style="margin: 5px 0;">
-        <label>
-          <input type="checkbox" ${isCurrentlyAssigned ? 'checked' : ''} 
-                 onchange="toggleStudent('${student.email}')" 
-                 style="margin-right: 8px;">
-          ${student.fullName} (${student.email})
-        </label>
-      </div>
-    `;
-  });
-  
-  selectionHtml += '</div>';
-  
-  // For now, use the simpler version above
-  // This would require implementing a proper modal system
-  alert('Student selection modal would appear here. Using simple assignment for now.');
-  
-  // Fall back to simple assignment
-  await assignToSpecificStudents(assessmentFirebaseId);
-};
+    if (activeStudents.length === 0) {
+      alert('No active students available for assignment.');
+      return;
+    }
+
+    // For demo purposes, let's assign to first 3 students
+    // In a real implementation, you'd want to show a selection modal
+    const specificStudents = activeStudents.slice(0, Math.min(3, activeStudents.length)).map(s => s.email);
+
+    if (window.confirm(`Assign "${assessment.title}" to specific students: ${specificStudents.join(', ')}?`)) {
+      try {
+        // Update Firestore
+        const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
+        await updateDoc(assessmentRef, {
+          assignedStudents: specificStudents,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        setAssessments(prev => prev.map(a => {
+          if (a.firebaseId === assessmentFirebaseId) {
+            return {
+              ...a,
+              assignedStudents: specificStudents
+            };
+          }
+          return a;
+        }));
+
+        alert(`Assessment "${assessment.title}" is now assigned to: ${specificStudents.join(', ')}`);
+      } catch (error) {
+        console.error("Error updating assessment:", error);
+        alert("Failed to update assessment. Please try again.");
+      }
+    }
+  };
+
+
 
   // Grading functions
   // UPDATED: gradeSubmission function to work with new data structure
@@ -782,77 +741,126 @@ const assignToSpecificStudentsWithModal = async (assessmentFirebaseId) => {
       return;
     }
 
+    // CRITICAL: Initialize grading scores for ALL questions
+    const initialGradingScores = {};
+    assessment.questions.forEach(question => {
+      // Check if this question already has a score
+      const existingScore = submission.scores ? submission.scores[question.id] : 0;
+      initialGradingScores[question.id] = existingScore || 0;
+    });
+
+    console.log('Initializing grading with scores for ALL questions:', initialGradingScores);
+
     setSelectedSubmission(submission);
-    setGradingScores({});
+    setGradingScores(initialGradingScores); // Initialize ALL question scores
     setShowGradingModal(true);
   };
 
-  // UPDATED: saveGrades function to work with Firebase structure
+  // ULTIMATE FIX: Completely rewritten saveGrades 
   const saveGrades = async () => {
-    if (!selectedSubmission) return;
+  if (!selectedSubmission) return;
 
-    const assessment = assessments.find(a => a.firebaseId === selectedSubmission.firebaseAssessmentId);
-    if (!assessment) {
-      alert('Assessment not found');
-      return;
-    }
+  const assessment = assessments.find(a => a.firebaseId === selectedSubmission.firebaseAssessmentId);
+  if (!assessment) {
+    alert('Assessment not found');
+    return;
+  }
 
-    let totalScore = 0;
-    const scores = {};
+  console.log('=== SAVING GRADES FOR ALL QUESTIONS ===');
 
+  // Ensure we have scores for ALL questions
+  const completeQuestionScores = {};
+  let totalScore = 0;
+
+  assessment.questions.forEach((question, index) => {
+    const score = parseInt(gradingScores[question.id]) || 0;
+    completeQuestionScores[question.id] = score;
+    totalScore += score;
+
+    console.log(`Question ${index + 1} (${question.id}): ${score}/${question.points} points`);
+  });
+
+  try {
+    const updatedSubmissions = { ...assessment.submissions };
+
+    // Save individual question data with scores using composite keys
     assessment.questions.forEach(question => {
-      const score = gradingScores[question.id] || 0;
-      scores[question.id] = parseInt(score);
-      totalScore += parseInt(score);
-    });
+      const questionId = question.id;
+      const compositeKey = `${questionId}_${selectedSubmission.studentName.replace(/\s+/g, '_')}`;
 
-    try {
-      // Update each question's submission in Firebase
-      const updatedSubmissions = {};
+      // Find existing submission entry for this student and question
+      const existingEntry = Object.entries(assessment.submissions).find(([key, data]) => 
+        data.questionId === questionId && data.studentName === selectedSubmission.studentName
+      );
 
-      Object.keys(selectedSubmission.answers).forEach(questionId => {
-        updatedSubmissions[questionId] = {
-          ...assessment.submissions[questionId], // Keep existing data
-          score: scores[questionId] || 0,
+      if (existingEntry) {
+        const [existingKey, existingData] = existingEntry;
+        updatedSubmissions[existingKey] = {
+          ...existingData,
+          score: completeQuestionScores[questionId],
+          maxPoints: question.points,
           graded: true,
           gradedAt: new Date().toISOString()
         };
-      });
+      } else {
+        // Create new entry with composite key
+        updatedSubmissions[compositeKey] = {
+          questionId: questionId,
+          studentName: selectedSubmission.studentName,
+          answers: {},
+          score: completeQuestionScores[questionId],
+          maxPoints: question.points,
+          graded: true,
+          gradedAt: new Date().toISOString(),
+          submittedAt: selectedSubmission.submittedAt || new Date().toISOString(),
+          isDraft: false
+        };
+      }
+    });
 
-      // Update Firestore
-      const assessmentRef = doc(db, "assessments", selectedSubmission.firebaseAssessmentId);
-      await updateDoc(assessmentRef, {
-        submissions: {
-          ...assessment.submissions,
-          ...updatedSubmissions
-        },
-        updatedAt: new Date().toISOString(),
-      });
+    // Save master grading record
+    const masterKey = `GRADES_${selectedSubmission.studentName.replace(/\s+/g, '_')}`;
+    updatedSubmissions[masterKey] = {
+      studentName: selectedSubmission.studentName,
+      totalScore: totalScore,
+      maxScore: assessment.maxScore,
+      questionScores: completeQuestionScores,
+      questionsCount: assessment.questions.length,
+      graded: true,
+      gradedAt: new Date().toISOString(),
+      assessmentId: selectedSubmission.assessmentId,
+      firebaseAssessmentId: selectedSubmission.firebaseAssessmentId
+    };
 
-      // Update local state
-      setAssessments(prev =>
-        prev.map(a =>
-          a.firebaseId === selectedSubmission.firebaseAssessmentId
-            ? {
-              ...a,
-              submissions: {
-                ...a.submissions,
-                ...updatedSubmissions
-              }
-            }
-            : a
-        )
-      );
+    console.log('Saving complete grading data:', updatedSubmissions[masterKey]);
 
-      setShowGradingModal(false);
-      setSelectedSubmission(null);
-      alert('Grades saved successfully!');
+    // Update Firestore
+    const assessmentRef = doc(db, "assessments", selectedSubmission.firebaseAssessmentId);
+    await updateDoc(assessmentRef, {
+      submissions: updatedSubmissions,
+      lastGradedAt: new Date().toISOString()
+    });
 
-    } catch (error) {
-      console.error("Error saving grades:", error);
-      alert("Failed to save grades. Please try again.");
-    }
-  };
+    // Update local state
+    setAssessments(prev =>
+      prev.map(a =>
+        a.firebaseId === selectedSubmission.firebaseAssessmentId
+          ? { ...a, submissions: updatedSubmissions }
+          : a
+      )
+    );
+
+    console.log(`✅ Successfully saved grades for ALL ${assessment.questions.length} questions`);
+
+    setShowGradingModal(false);
+    setSelectedSubmission(null);
+    alert(`✅ Graded ALL ${assessment.questions.length} questions successfully!\nTotal: ${totalScore}/${assessment.maxScore} points`);
+
+  } catch (error) {
+    console.error("Error saving grades:", error);
+    alert("Failed to save grades. Check console.");
+  }
+};
   const closeGradingModal = () => {
     setShowGradingModal(false);
     setSelectedSubmission(null);
@@ -962,7 +970,7 @@ const assignToSpecificStudentsWithModal = async (assessmentFirebaseId) => {
 
         if (hasAnyAnswer) {
           submissionsObj[question.id] = {
-            studentId: "demo_student_id",           // ✅ unique student id
+            studentId:currentUser.email,           // ✅ unique student id
             studentName: currentUser.username,    // ✅ student name
             assessmentId: fileId,                 // ✅ custom assessment id
             firebaseAssessmentId: currentAssessmentId, // ✅ Firestore doc id
@@ -1707,234 +1715,327 @@ const assignToSpecificStudentsWithModal = async (assessmentFirebaseId) => {
       </div>
     </div>
   );
-const isAssignedToAllStudents = (assignedStudents, allDbStudents) => {
-  // If no specific assignment, it means all students
-  if (!assignedStudents || assignedStudents.length === 0) {
-    return true;
-  }
-  
-  // Get active students from database
-  const activeStudents = allDbStudents.filter(student => student.isActive);
-  
-  if (activeStudents.length === 0) {
-    return false;
-  }
-  
-  // Convert assigned emails to usernames for comparison
-  const assignedUsernames = assignedStudents.map(email => {
-    const student = allDbStudents.find(s => s.email === email);
-    return student ? (student.username || student.fullName || student.email) : email;
-  });
-  
-  // Get active student usernames
-  const activeStudentUsernames = activeStudents.map(student => 
-    student.username || student.fullName || student.email
-  );
-  
-  // Debug logs
-  console.log('Assigned emails:', assignedStudents);
-  console.log('Converted to usernames:', assignedUsernames);
-  console.log('Active student usernames from DB:', activeStudentUsernames);
-  
-  // Check if assigned usernames array contains ALL active student usernames
-  return activeStudentUsernames.length === assignedUsernames.length && 
-         activeStudentUsernames.every(username => assignedUsernames.includes(username));
-};
+  const isAssignedToAllStudents = (assignedStudents, allDbStudents) => {
+    // If no specific assignment, it means all students
+    if (!assignedStudents || assignedStudents.length === 0) {
+      return true;
+    }
 
-// Helper function to display student names properly
-const getDisplayStudentNames = (assignedStudents, dbStudents) => {
-  if (!assignedStudents || assignedStudents.length === 0) {
-    return [];
-  }
-  
-  // Convert emails to display names
-  return assignedStudents.map(email => {
-    const student = dbStudents.find(s => s.email === email);
-    return student ? student.fullName : email;
-  });
-};
+    // Get active students from database
+    const activeStudents = allDbStudents.filter(student => student.isActive);
+
+    if (activeStudents.length === 0) {
+      return false;
+    }
+
+    // Convert assigned emails to usernames for comparison
+    const assignedUsernames = assignedStudents.map(email => {
+      const student = allDbStudents.find(s => s.email === email);
+      return student ? (student.username || student.fullName || student.email) : email;
+    });
+
+    // Get active student usernames
+    const activeStudentUsernames = activeStudents.map(student =>
+      student.username || student.fullName || student.email
+    );
+
+    // Debug logs
+    console.log('Assigned emails:', assignedStudents);
+    console.log('Converted to usernames:', assignedUsernames);
+    console.log('Active student usernames from DB:', activeStudentUsernames);
+
+    // Check if assigned usernames array contains ALL active student usernames
+    return activeStudentUsernames.length === assignedUsernames.length &&
+      activeStudentUsernames.every(username => assignedUsernames.includes(username));
+  };
+
+  // Helper function to display student names properly
+  const getDisplayStudentNames = (assignedStudents, dbStudents) => {
+    if (!assignedStudents || assignedStudents.length === 0) {
+      return [];
+    }
+
+    // Convert emails to display names
+    return assignedStudents.map(email => {
+      const student = dbStudents.find(s => s.email === email);
+      return student ? student.fullName : email;
+    });
+  };
   // Render Manage Assessments Tab
- const renderManageAssessments = () => (
-  <div>
-    <h3>Manage Assessments</h3>
+  const renderManageAssessments = () => (
+    <div>
+      <h3>Manage Assessments</h3>
 
-    {assessments.length === 0 ? (
-      <div className="question-card">
-        <h4>No Assessments Found</h4>
-        <p>You haven't created any assessments yet.</p>
-        <button className="btn" onClick={() => setAdminActiveTab('create-assessment')}>
-          Create Your First Assessment
-        </button>
-      </div>
-    ) : (
-      assessments.map(assessment => {
-        const now = new Date();
-        const start = new Date(assessment.startDate);
-        const end = new Date(assessment.endDate);
+      {assessments.length === 0 ? (
+        <div className="question-card">
+          <h4>No Assessments Found</h4>
+          <p>You haven't created any assessments yet.</p>
+          <button className="btn" onClick={() => setAdminActiveTab('create-assessment')}>
+            Create Your First Assessment
+          </button>
+        </div>
+      ) : (
+        assessments.map(assessment => {
+          const now = new Date();
+          const start = new Date(assessment.startDate);
+          const end = new Date(assessment.endDate);
 
-        let statusClass = 'status-pending';
+          let statusClass = 'status-pending';
 
-        if (now >= start && now <= end) {
-          statusClass = 'status-open';
-        } else if (now > end) {
-          statusClass = 'status-closed';
-        }
+          if (now >= start && now <= end) {
+            statusClass = 'status-open';
+          } else if (now > end) {
+            statusClass = 'status-closed';
+          }
 
-        // Use the helper function to check if assigned to all students
-        const isAssignedToAll = isAssignedToAllStudents(assessment.assignedStudents, dbStudents);
-                const displayNames = getDisplayStudentNames(assessment.assignedStudents, dbStudents);
+          // Use the helper function to check if assigned to all students
+          const isAssignedToAll = isAssignedToAllStudents(assessment.assignedStudents, dbStudents);
+          const displayNames = getDisplayStudentNames(assessment.assignedStudents, dbStudents);
 
-        return (
-          <div key={assessment.id} className="question-card">
-            <div className="question-header">
-              <h4>📝 {assessment.title}</h4>
-              <span className={`status-badge ${statusClass}`}>{assessment.status}</span>
-            </div>
-            <p>{assessment.description}</p>
-            <div className="question-meta">
-              <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
-              <strong>Max Score:</strong> {assessment.maxScore} points<br />
-              <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}<br />
-              <strong>Assigned to:</strong> {
-                isAssignedToAll
-                  ? <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL STUDENTS</span>
-                  : displayNames.length > 0
-                    ? displayNames.join(', ') // 👈 SHOWS USERNAMES INSTEAD OF EMAILS
-                    : <span style={{ color: '#dc3545', fontWeight: 'bold' }}>NO STUDENTS ASSIGNED</span>
-                     }
-            </div>
-            <div style={{ marginTop: '15px' }}>
-              <button
-                className="btn"
-                onClick={() => addQuestionToAssessment(assessment.firebaseId, assessment.id)}
-              >
-                Add Question
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => viewAssessmentQuestions(assessment.firebaseId)}
-              >
-                View Questions
-              </button>
-              <button
-                className="btn btn-success"
-                onClick={() => activateAssessmentNow(assessment.firebaseId)}
-              >
-                🚀 Activate Now
-              </button>
-              {isAssignedToAll ? (
+          return (
+            <div key={assessment.id} className="question-card">
+              <div className="question-header">
+                <h4>📝 {assessment.title}</h4>
+                <span className={`status-badge ${statusClass}`}>{assessment.status}</span>
+              </div>
+              <p>{assessment.description}</p>
+              <div className="question-meta">
+                <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
+                <strong>Max Score:</strong> {assessment.maxScore} points<br />
+                <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}<br />
+                <strong>Assigned to:</strong> {
+                  isAssignedToAll
+                    ? <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL STUDENTS</span>
+                    : displayNames.length > 0
+                      ? displayNames.join(', ') // 👈 SHOWS USERNAMES INSTEAD OF EMAILS
+                      : <span style={{ color: '#dc3545', fontWeight: 'bold' }}>NO STUDENTS ASSIGNED</span>
+                }
+              </div>
+              <div style={{ marginTop: '15px' }}>
+                <button
+                  className="btn"
+                  onClick={() => addQuestionToAssessment(assessment.firebaseId, assessment.id)}
+                >
+                  Add Question
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => viewAssessmentQuestions(assessment.firebaseId)}
+                >
+                  View Questions
+                </button>
                 <button
                   className="btn btn-success"
-                  onClick={() => assignToSpecificStudents(assessment.firebaseId)}
+                  onClick={() => activateAssessmentNow(assessment.firebaseId)}
                 >
-                  Assign to Specific Students
+                  🚀 Activate Now
                 </button>
-              ) : (
+                {isAssignedToAll ? (
+                  <button
+                    className="btn btn-success"
+                    onClick={() => assignToSpecificStudents(assessment.firebaseId)}
+                  >
+                    Assign to Specific Students
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-success"
+                    onClick={() => assignToAllStudents(assessment.firebaseId)}
+                  >
+                    Assign to All Students
+                  </button>
+                )}
                 <button
-                  className="btn btn-success"
-                  onClick={() => assignToAllStudents(assessment.firebaseId)}
+                  className="btn btn-danger"
+                  onClick={() => deleteAssessment(assessment.firebaseId)}
                 >
-                  Assign to All Students
+                  Delete
                 </button>
-              )}
-              <button
-                className="btn btn-danger"
-                onClick={() => deleteAssessment(assessment.firebaseId)}
-              >
-                Delete
-              </button>
+              </div>
             </div>
-          </div>
-        );
-      })
-    )}
-  </div>
-);
+          );
+        })
+      )}
+    </div>
+  );
 
   // Render Grade Submissions Tab
-  const renderGradeSubmissions = () => {
+const renderGradeSubmissions = () => {
     const allSubmissions = extractAllSubmissionsFromAssessments();
 
     return (
       <div>
         <h3>Grade Submissions</h3>
+        
+       
 
+        {/* Summary Statistics */}
+        {allSubmissions.length > 0 && (
+          <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+            <strong>Summary:</strong> {allSubmissions.length} total submissions | {allSubmissions.filter(s => s.graded).length} graded | {allSubmissions.filter(s => !s.graded).length} pending
+          </div>
+        )}
+
+        {/* No Submissions State */}
         {allSubmissions.length === 0 ? (
           <div className="question-card">
             <h4>No Submissions Found</h4>
             <p>There are currently no student submissions in the system.</p>
           </div>
         ) : (
-          allSubmissions.map(submission => {
-            // UPDATED: Find assessment using firebaseAssessmentId
-            const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-            if (!assessment) return null;
+          /* Submissions List */
+          <div className="submissions-container">
+            {allSubmissions.map(submission => {
+              // Find assessment using firebaseAssessmentId
+              const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+              
+              // Skip if assessment not found
+              if (!assessment) {
+                console.warn(`Assessment not found for submission ${submission.id}`);
+                return null;
+              }
 
-            const answerCount = submission.answers ? Object.keys(submission.answers).length : 0;
+              const answerCount = submission.answers ? Object.keys(submission.answers).length : 0;
+              const isGraded = submission.graded;
+              const submissionDate = new Date(submission.submittedAt);
 
-            return (
-              <div key={submission.id} className="question-card">
-                <div className="question-header">
-                  <h4>📋 {assessment.title} - {submission.studentName}</h4>
-                  <span className={`status-badge ${submission.graded ? 'status-open' : 'status-pending'}`}>
-                    {submission.graded ? 'Graded' : 'Pending'}
-                  </span>
+              return (
+                <div key={submission.id} className="question-card">
+                  {/* Header Section */}
+                  <div className="question-header">
+                    <h4>📋 {assessment.title} - {submission.studentName}</h4>
+                    <span className={`status-badge ${isGraded ? 'status-open' : 'status-pending'}`}>
+                      {isGraded ? 'Graded' : 'Pending'}
+                    </span>
+                  </div>
+
+                  {/* Submission Details */}
+                  <div className="question-meta">
+                    <div><strong>Submitted:</strong> {submissionDate.toLocaleString()}</div>
+                    <div><strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}</div>
+                    <div><strong>Answers:</strong> {answerCount} questions answered</div>
+                    <div><strong>Total Score:</strong> {submission.totalScore} / {assessment.maxScore}</div>
+                    
+                    {/* Show individual question scores if graded
+                    {isGraded && Object.keys(submission.questionScores).length > 0 && (
+                      <div style={{ marginTop: '8px' }}>
+                        <strong>Question Breakdown:</strong>
+                        <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+                          {Object.entries(submission.questionScores).map(([questionId, score]) => (
+                            <div key={questionId}>Question {questionId}: {score} points</div>
+                          ))}
+                        </div>
+                      </div>
+                    )} */}
+                    
+                    {submission.submissionNotes && (
+                      <div><strong>Notes:</strong> {submission.submissionNotes}</div>
+                    )}
+                  </div>
+
+                  {/* Time Information */}
+                  {submission.timeSpent && (
+                    <div className="time-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                      <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
+                    </div>
+                  )}
+
+                  {/* Action Section */}
+                  <div style={{ marginTop: '15px' }}>
+                    {!isGraded ? (
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => gradeSubmission(submission.id)}
+                      >
+                        Grade Submission
+                      </button>
+                    ) : (
+                      <div style={{ 
+                        padding: '8px 12px', 
+                        backgroundColor: '#d4edda', 
+                        border: '1px solid #c3e6cb',
+                        borderRadius: '4px',
+                        color: '#155724',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}>
+                        ✅ Grade Already Submitted
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grade Display for Completed Submissions */}
+                  {isGraded && submission.feedback && (
+                    <div className="grade-feedback" style={{ 
+                      marginTop: '15px', 
+                      padding: '10px', 
+                      backgroundColor: '#e8f5e8', 
+                      borderRadius: '5px',
+                      borderLeft: '4px solid #28a745'
+                    }}>
+                      <strong>Feedback:</strong>
+                      <div style={{ marginTop: '5px' }}>{submission.feedback}</div>
+                    </div>
+                  )}
                 </div>
-                <div className="question-meta">
-                  <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-                  <strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}<br />
-                  <strong>Answers:</strong> {answerCount} questions answered<br />
-                  <strong>Score:</strong> {submission.score || 'Not graded'} / {assessment.maxScore}
-                </div>
-                <div style={{ marginTop: '15px' }}>
-                  <button className="btn" onClick={() => gradeSubmission(submission.id)}>
-                    Grade Submission
-                  </button>
-                </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
     );
   };
 
   // Render View Results Tab
-  const renderViewResults = () => {
-    const allSubmissions = extractAllSubmissionsFromAssessments();
-    const gradedSubmissions = allSubmissions.filter(s => s.graded);
+ // Render View Results Tab
+const renderViewResults = () => {
+  const allSubmissions = extractAllSubmissionsFromAssessments();
+  const gradedSubmissions = allSubmissions.filter(s => s.graded);
 
-    return (
-      <div>
-        <h3>Assessment Results</h3>
+  return (
+    <div>
+      <h3>Assessment Results</h3>
 
-        {gradedSubmissions.length === 0 ? (
-          <p>No graded submissions yet.</p>
-        ) : (
-          gradedSubmissions.map(submission => {
-            const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-            if (!assessment) return null;
+      {gradedSubmissions.length === 0 ? (
+        <p>No graded submissions yet.</p>
+      ) : (
+        gradedSubmissions.map(submission => {
+          const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+          if (!assessment) return null;
 
-            const percentage = ((submission.score / assessment.maxScore) * 100).toFixed(1);
+          // Use totalScore instead of submission.score
+          const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
 
-            return (
-              <div key={submission.id} className="question-card">
-                <div className="question-header">
-                  <h4>📊 {assessment.title} - {submission.studentName}</h4>
-                  <span className="status-badge status-open">{percentage}%</span>
-                </div>
-                <div className="question-meta">
-                  <strong>Score:</strong> {submission.score} / {assessment.maxScore}<br />
-                  <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-                  <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
-                </div>
+          return (
+            <div key={submission.id} className="question-card">
+              <div className="question-header">
+                <h4>📊 {assessment.title} - {submission.studentName}</h4>
+                <span className="status-badge status-open">{percentage}%</span>
               </div>
-            );
-          })
-        )}
-      </div>
-    );
-  };
+              <div className="question-meta">
+                <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
+                <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+                <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+                
+                {/* Optional: Show question breakdown
+                {Object.keys(submission.questionScores).length > 0 && (
+                  <div style={{ marginTop: '10px' }}>
+                    <strong>Question Breakdown:</strong>
+                    <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+                      {Object.entries(submission.questionScores).map(([questionId, score]) => (
+                        <div key={questionId}>Question {questionId}: {score} points</div>
+                      ))}
+                    </div>
+                  </div>
+                )} */}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+};
 
   // Render Student Dashboard
   const renderStudentDashboard = () => (
@@ -1973,170 +2074,265 @@ const getDisplayStudentNames = (assignedStudents, dbStudents) => {
   );
 
   const renderAvailableAssessments = () => {
-    const myAssessments = loadStudentAssessments();
-    const now = new Date();
+  const myAssessments = loadStudentAssessments();
+  const now = new Date();
 
-    return (
-      <div>
-        <h3>Available Assessments</h3>
+  return (
+    <div>
+      <h3>Available Assessments</h3>
 
-        {myAssessments.length === 0 ? (
-          <div className="question-card">
-            <h4>No Assessments Available</h4>
-            <p>You currently have no assessments assigned to you.</p>
-          </div>
-        ) : (
-          myAssessments.map(assessment => {
-            const start = new Date(assessment.startDate);
-            const end = new Date(assessment.endDate);
+      {myAssessments.length === 0 ? (
+        <div className="question-card">
+          <h4>No Assessments Available</h4>
+          <p>You currently have no assessments assigned to you.</p>
+        </div>
+      ) : (
+        myAssessments.map(assessment => {
+          const start = new Date(assessment.startDate);
+          const end = new Date(assessment.endDate);
 
-            let status = 'Scheduled';
-            let statusClass = 'status-pending';
-            let actionButton = '';
+          let status = 'Scheduled';
+          let statusClass = 'status-pending';
+          let actionButton = '';
 
-            // Check submissions inside the assessment
-            const hasSubmission = assessment.submissions && Object.values(assessment.submissions).some(sub =>
-              sub.answers && Object.keys(sub.answers).length > 0
+          // Check if current student has submitted - filter by student name
+          const currentStudentName = currentUser.username; // or however you get current student name
+          
+          const hasCurrentStudentSubmission = assessment.submissions && 
+            Object.values(assessment.submissions).some(sub =>
+              sub.studentName === currentStudentName && 
+              sub.answers && 
+              Object.keys(sub.answers).length > 0
             );
 
+          // Get current student's submission for score display
+          const currentStudentSubmission = assessment.submissions && 
+            Object.values(assessment.submissions).find(sub =>
+              sub.studentName === currentStudentName
+            );
 
-            if (now >= start) {
-              status = 'Active';
-              statusClass = 'status-open';
+          if (now >= start && now <= end) {
+            status = 'Active';
+            statusClass = 'status-open';
 
-              // const existingSubmission = submissions.find(s => 
-              //   s.assessmentId === assessment.id && s.studentName === currentUser.username
-              // );
-
-              if (hasSubmission) {
-                actionButton = <span className="status-badge status-open">✅ Submitted</span>;
-              } else {
+            if (hasCurrentStudentSubmission) {
+              // Show submission status with score if graded
+              if (currentStudentSubmission && currentStudentSubmission.graded) {
+                const studentTotalScore = currentStudentSubmission.score || 0; // You might need to calculate total here too
+                const percentage = ((studentTotalScore / assessment.maxScore) * 100).toFixed(1);
                 actionButton = (
-                  <button className="btn" onClick={() => takeAssessment(assessment.firebaseId, assessment.id)}>
-                    Take Assessment
-                  </button>
+                  <span className="status-badge status-open">
+                    ✅ Submitted & Graded ({studentTotalScore}/{assessment.maxScore} - {percentage}%)
+                  </span>
                 );
+              } else {
+                actionButton = <span className="status-badge status-open">✅ Submitted (Pending Grade)</span>;
               }
-            } else if (now > end) {
-              status = 'Closed';
-              statusClass = 'status-closed';
-              actionButton = <span className="status-badge status-closed">Assessment Ended</span>;
             } else {
-              actionButton = <button className="btn btn-secondary" disabled>Not Started</button>;
+              actionButton = (
+                <button className="btn" onClick={() => takeAssessment(assessment.firebaseId, assessment.id)}>
+                  Take Assessment
+                </button>
+              );
             }
-
-            return (
-              <div key={assessment.id} className="question-card">
-                <div className="question-header">
-                  <h4>📝 {assessment.title}</h4>
-                  <span className={`status-badge ${statusClass}`}>{status}</span>
-                </div>
-                <p>{assessment.description}</p>
-                <div className="question-meta">
-                  <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
-                  <strong>Max Score:</strong> {assessment.maxScore} points<br />
-                  <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}
-                </div>
-                <div style={{ marginTop: '15px' }}>
-                  {actionButton}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    );
-  };
-
-
-  const extractAllSubmissionsFromAssessments = () => {
-    const allSubmissions = [];
-
-    assessments.forEach(assessment => {
-      if (assessment.submissions) {
-        // Group all question submissions by student name for this assessment
-        const studentSubmissions = {};
-
-        Object.entries(assessment.submissions).forEach(([questionId, submissionData]) => {
-          const studentName = submissionData.studentName;
-
-          if (!studentSubmissions[studentName]) {
-            studentSubmissions[studentName] = {
-              id: `sub_${assessment.id}_${studentName}`,
-              assessmentId: assessment.id,
-              firebaseAssessmentId: assessment.firebaseId,
-              assessmentTitle: assessment.title,
-              assessmentMaxScore: assessment.maxScore,
-              studentName: studentName,
-              answers: {},
-              submittedAt: submissionData.submittedAt,
-              isDraft: submissionData.isDraft || false,
-              lastModified: submissionData.lastModified || submissionData.submittedAt,
-              graded: submissionData.graded || false,
-              score: submissionData.score,
-              gradedAt: submissionData.gradedAt
-            };
+          } else if (now > end) {
+            status = 'Closed';
+            statusClass = 'status-closed';
+            
+            if (hasCurrentStudentSubmission && currentStudentSubmission && currentStudentSubmission.graded) {
+              const studentTotalScore = currentStudentSubmission.score || 0;
+              const percentage = ((studentTotalScore / assessment.maxScore) * 100).toFixed(1);
+              actionButton = (
+                <span className="status-badge status-closed">
+                  Assessment Ended - Final Score: {studentTotalScore}/{assessment.maxScore} ({percentage}%)
+                </span>
+              );
+            } else if (hasCurrentStudentSubmission) {
+              actionButton = <span className="status-badge status-closed">Assessment Ended - Awaiting Grade</span>;
+            } else {
+              actionButton = <span className="status-badge status-closed">Assessment Ended - Not Submitted</span>;
+            }
+          } else {
+            actionButton = <button className="btn btn-secondary" disabled>Not Started</button>;
           }
 
+          return (
+            <div key={assessment.id} className="question-card">
+              <div className="question-header">
+                <h4>📝 {assessment.title}</h4>
+                <span className={`status-badge ${statusClass}`}>{status}</span>
+              </div>
+              <p>{assessment.description}</p>
+              <div className="question-meta">
+                <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
+                <strong>Max Score:</strong> {assessment.maxScore} points<br />
+                <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}
+                
+                {/* Show submission details if student has submitted */}
+                {currentStudentSubmission && (
+                  <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                    <strong>Your Submission:</strong><br />
+                    <small>
+                      Submitted: {new Date(currentStudentSubmission.submittedAt).toLocaleString()}<br />
+                      Status: {currentStudentSubmission.isDraft ? 'Draft' : 'Final'}<br />
+                      {currentStudentSubmission.graded && currentStudentSubmission.gradedAt && (
+                        <>Graded: {new Date(currentStudentSubmission.gradedAt).toLocaleString()}</>
+                      )}
+                    </small>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: '15px' }}>
+                {actionButton}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+};
+
+// Updated function for admin to view all submissions
+const extractAllSubmissionsFromAssessments = () => {
+  const allSubmissions = [];
+
+  assessments.forEach(assessment => {
+    if (assessment.submissions) {
+      // Group submissions by student name for this assessment
+      const studentSubmissions = {};
+
+      Object.entries(assessment.submissions).forEach(([submissionKey, submissionData]) => {
+        const studentName = submissionData.studentName;
+
+        // Skip GRADES_ entries, we'll process them separately
+        if (submissionKey.startsWith('GRADES_')) {
+          return;
+        }
+
+        if (!studentSubmissions[studentName]) {
+          studentSubmissions[studentName] = {
+            id: `sub_${assessment.id}_${studentName.replace(/\s+/g, '_')}`,
+            assessmentId: assessment.id,
+            firebaseAssessmentId: assessment.firebaseId,
+            assessmentTitle: assessment.title,
+            assessmentMaxScore: assessment.maxScore,
+            studentName: studentName,
+            answers: {},
+            submittedAt: submissionData.submittedAt,
+            isDraft: submissionData.isDraft || false,
+            lastModified: submissionData.lastModified || submissionData.submittedAt,
+            graded: false,
+            totalScore: 0,
+            questionScores: {},
+            gradedAt: null
+          };
+        }
+
+        // Extract question ID from composite key or use questionId field
+        const questionId = submissionData.questionId;
+        if (questionId) {
           // Add this question's answers to the grouped submission
           studentSubmissions[studentName].answers[questionId] = submissionData.answers;
-        });
+          
+          // Add this question's score if it exists
+          const questionScore = submissionData.score || 0;
+          studentSubmissions[studentName].questionScores[questionId] = questionScore;
+          studentSubmissions[studentName].totalScore += questionScore;
+        }
+      });
 
-        // Add all student submissions for this assessment
-        Object.values(studentSubmissions).forEach(submission => {
-          allSubmissions.push(submission);
-        });
-      }
-    });
-
-    return allSubmissions;
-  };
-  // ALSO UPDATE: extractSubmissionsFromAssessments to properly group answers
-  const extractSubmissionsFromAssessments = () => {
-    const allSubmissions = [];
-
-    assessments.forEach(assessment => {
-      if (assessment.submissions) {
-        // Group all question submissions by student name
-        const studentSubmissions = {};
-
-        Object.entries(assessment.submissions).forEach(([questionId, submissionData]) => {
-          if (submissionData.studentName === currentUser?.username) {
-            const studentName = submissionData.studentName;
-
-            if (!studentSubmissions[studentName]) {
-              studentSubmissions[studentName] = {
-                id: `sub_${assessment.id}_${studentName}`,
-                assessmentId: assessment.id,
-                firebaseAssessmentId: assessment.firebaseId,
-                assessmentTitle: assessment.title,
-                assessmentMaxScore: assessment.maxScore,
-                studentName: studentName,
-                answers: {}, // This will collect all question answers
-                submittedAt: submissionData.submittedAt,
-                isDraft: submissionData.isDraft || false,
-                lastModified: submissionData.lastModified || submissionData.submittedAt,
-                graded: submissionData.graded || false,
-                score: submissionData.score,
-                gradedAt: submissionData.gradedAt
-              };
-            }
-
-            // Add this question's answers to the grouped submission
-            studentSubmissions[studentName].answers[questionId] = submissionData.answers;
+      // Process GRADES_ entries to update grading status
+      Object.entries(assessment.submissions).forEach(([key, data]) => {
+        if (key.startsWith('GRADES_')) {
+          const studentName = data.studentName;
+          if (studentSubmissions[studentName]) {
+            studentSubmissions[studentName].graded = data.graded || false;
+            studentSubmissions[studentName].gradedAt = data.gradedAt;
+            studentSubmissions[studentName].totalScore = data.totalScore || 0;
+            studentSubmissions[studentName].questionScores = data.questionScores || {};
           }
-        });
+        }
+      });
 
-        // Add the grouped submission to allSubmissions
-        Object.values(studentSubmissions).forEach(submission => {
-          allSubmissions.push(submission);
-        });
-      }
+      // Add all student submissions for this assessment
+      Object.values(studentSubmissions).forEach(submission => {
+        allSubmissions.push(submission);
+      });
+    }
+  });
+
+  return allSubmissions;
+};
+
+// Updated function for students to view their own submissions
+const extractSubmissionsFromAssessments = () => {
+  const allSubmissions = [];
+
+  assessments.forEach(assessment => {
+    if (!assessment.submissions) return;
+
+    // Find GRADES_ entries for current user
+    const gradingEntries = Object.entries(assessment.submissions).filter(([key, data]) =>
+      key.startsWith('GRADES_') && data.studentName === currentUser?.username
+    );
+
+    gradingEntries.forEach(([gradingKey, gradingData]) => {
+      const studentName = gradingData.studentName;
+
+      console.log(`Processing submission for ${studentName}:`, gradingData);
+
+      // Collect answers from individual question entries with composite keys
+      const answers = {};
+      const individualScores = {};
+
+      // Updated: Look for composite key entries that belong to this student
+      const questionEntries = Object.entries(assessment.submissions).filter(([key, data]) => {
+        return !key.startsWith('GRADES_') && 
+               data.studentName === studentName &&
+               data.questionId; // Make sure it has questionId
+      });
+
+      console.log(`Found ${questionEntries.length} question entries for ${studentName}`);
+
+      questionEntries.forEach(([compositeKey, questionData]) => {
+        const questionId = questionData.questionId;
+        
+        answers[questionId] = {
+          answers: questionData.answers || {},
+          score: questionData.score || 0,
+          graded: questionData.graded || false
+        };
+
+        // Use the actual question score from the individual question entry
+        individualScores[questionId] = questionData.score || 0;
+      });
+
+      console.log('Individual scores collected:', individualScores);
+
+      const submission = {
+        id: `sub_${assessment.id}_${studentName.replace(/\s+/g, '_')}`,
+        assessmentId: assessment.id,
+        firebaseAssessmentId: assessment.firebaseId,
+        assessmentTitle: assessment.title,
+        assessmentMaxScore: assessment.maxScore,
+        studentName: studentName,
+        answers: answers,
+        scores: individualScores,
+        submittedAt: questionEntries[0]?.[1]?.submittedAt || new Date().toISOString(),
+        graded: gradingData.graded || false,
+        score: gradingData.totalScore || 0,
+        gradedAt: gradingData.gradedAt,
+        isDraft: false
+      };
+
+      console.log('Final submission object:', submission);
+      allSubmissions.push(submission);
     });
+  });
 
-    return allSubmissions;
-  };
-
+  return allSubmissions;
+};
   const renderMySubmissions = () => {
     const mySubmissions = extractSubmissionsFromAssessments();
 
@@ -2774,11 +2970,19 @@ const getDisplayStudentNames = (assignedStudents, dbStudents) => {
     );
   };
   // Render Grading Modal
+  // FIXED: renderGradingModal to show ALL questions and handle scoring properly
   const renderGradingModal = () => {
     if (!showGradingModal || !selectedSubmission) return null;
 
-    const assessment = assessments.find(a => a.id === selectedSubmission.assessmentId);
-    if (!assessment) return null;
+    // FIXED: Find assessment using firebaseAssessmentId, not assessmentId
+    const assessment = assessments.find(a => a.firebaseId === selectedSubmission.firebaseAssessmentId);
+    if (!assessment) {
+      console.error("Assessment not found for submission:", selectedSubmission);
+      return null;
+    }
+
+    console.log("Grading assessment:", assessment);
+    console.log("Selected submission for grading:", selectedSubmission);
 
     return (
       <div style={{
@@ -2804,52 +3008,161 @@ const getDisplayStudentNames = (assignedStudents, dbStudents) => {
         }}>
           <h3>📊 Grade Submission: {assessment.title}</h3>
           <p><strong>Student:</strong> {selectedSubmission.studentName}</p>
+          <div style={{
+            background: '#e3f2fd',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '20px',
+            fontSize: '14px'
+          }}>
+            <strong>Instructions:</strong> Grade each question individually. Total score will be calculated automatically.
+          </div>
 
           <div style={{ maxHeight: '400px', overflowY: 'auto', margin: '20px 0' }}>
             {assessment.questions.map((question, index) => {
-              const questionAnswers = selectedSubmission.answers && selectedSubmission.answers[question.id] ?
-                selectedSubmission.answers[question.id] : {};
+              // FIXED: Get question answers from correct location
+              let questionAnswers = {};
+
+              if (selectedSubmission.answers && selectedSubmission.answers[question.id]) {
+                if (selectedSubmission.answers[question.id].answers) {
+                  questionAnswers = selectedSubmission.answers[question.id].answers;
+                } else {
+                  questionAnswers = selectedSubmission.answers[question.id];
+                }
+              }
+
+              // Get current score for this question (if previously graded)
+              const currentScore = gradingScores[question.id] || 0;
+
+              console.log(`Question ${question.id} answers for grading:`, questionAnswers);
 
               return (
                 <div key={question.id} className="question-card">
-                  <h4>❓ Question {index + 1} ({question.points} points)</h4>
+                  <div className="question-header">
+                    <h4>❓ Question {index + 1} ({question.points} points)</h4>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      Question ID: {question.id}
+                    </div>
+                  </div>
                   <p><strong>Question:</strong> {question.text}</p>
+                  {question.instructions && <p><em>Instructions: {question.instructions}</em></p>}
 
                   <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '10px 0' }}>
                     <strong>Student Answers:</strong><br />
-                    {Object.keys(questionAnswers).length > 0 ? (
+                    {questionAnswers && typeof questionAnswers === 'object' && Object.keys(questionAnswers).length > 0 ? (
                       Object.entries(questionAnswers).map(([type, answer]) => (
                         <div key={type} style={{ marginBottom: '10px' }}>
-                          <strong>{type.toUpperCase()}:</strong> {answer}
+                          <strong>{type.toUpperCase()}:</strong>
+                          <div style={{
+                            background: '#fff',
+                            padding: '10px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            marginTop: '5px',
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: type === 'code' ? 'monospace' : 'inherit'
+                          }}>
+                            {answer || 'No answer provided'}
+                          </div>
                         </div>
                       ))
+                    ) : questionAnswers && typeof questionAnswers === 'string' && questionAnswers.trim() ? (
+                      <div style={{
+                        background: '#fff',
+                        padding: '10px',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                        marginTop: '5px',
+                        whiteSpace: 'pre-wrap'
+                      }}>
+                        {questionAnswers}
+                      </div>
                     ) : (
                       <div style={{ color: '#dc3545', fontStyle: 'italic' }}>
-                        No answer found for this question
+                        ⚠️ No answer found for this question
                       </div>
                     )}
                   </div>
 
-                  <div style={{ marginTop: '10px' }}>
-                    <label><strong>Score:</strong></label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={question.points}
-                      style={{ width: '80px', marginLeft: '5px', marginRight: '10px' }}
-                      value={gradingScores[question.id] || 0}
-                      onChange={(e) => handleScoreChange(question.id, e.target.value)}
-                    />
-                    / {question.points} points
+                  {/* FIXED: Scoring input for EVERY question */}
+                  <div style={{
+                    marginTop: '15px',
+                    padding: '15px',
+                    background: '#e8f5e8',
+                    borderRadius: '8px',
+                    border: '2px solid #28a745'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div>
+                        <label style={{ fontWeight: 'bold', marginBottom: '5px' }}>Score for Question {index + 1}:</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max={question.points}
+                            style={{
+                              width: '80px',
+                              padding: '8px',
+                              border: '2px solid #e0e0e0',
+                              borderRadius: '4px',
+                              fontSize: '16px',
+                              fontWeight: 'bold'
+                            }}
+                            value={currentScore}
+                            onChange={(e) => handleScoreChange(question.id, e.target.value)}
+                            placeholder="0"
+                          />
+                          <span style={{ fontWeight: 'bold' }}>/ {question.points} points</span>
+                          <span style={{
+                            marginLeft: '10px',
+                            color: currentScore == question.points ? '#28a745' : currentScore > 0 ? '#ffc107' : '#dc3545',
+                            fontWeight: 'bold'
+                          }}>
+                            ({question.points > 0 ? ((currentScore / question.points) * 100).toFixed(1) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: '24px',
+                        color: currentScore == question.points ? '#28a745' : currentScore > 0 ? '#ffc107' : '#dc3545'
+                      }}>
+                        {currentScore == question.points ? '✅' : currentScore > 0 ? '🔶' : '❌'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
 
+          {/* Show total score preview */}
+          <div style={{
+            background: '#667eea',
+            color: 'white',
+            padding: '15px',
+            borderRadius: '8px',
+            marginTop: '20px',
+            textAlign: 'center'
+          }}>
+            <h4 style={{ margin: 0 }}>
+              Total Score Preview: {
+                Object.values(gradingScores).reduce((sum, score) => sum + parseInt(score || 0), 0)
+              } / {assessment.maxScore} points
+            </h4>
+            <p style={{ margin: '5px 0 0 0' }}>
+              ({((Object.values(gradingScores).reduce((sum, score) => sum + parseInt(score || 0), 0) / assessment.maxScore) * 100).toFixed(1)}%)
+            </p>
+          </div>
+
           <div style={{ textAlign: 'right', marginTop: '20px' }}>
             <button className="btn btn-secondary" onClick={closeGradingModal}>Cancel</button>
-            <button className="btn" onClick={saveGrades}>Save Grades</button>
+            <button
+              className="btn"
+              onClick={saveGrades}
+              style={{ marginLeft: '10px' }}
+            >
+              💾 Save Grades for All Questions
+            </button>
           </div>
         </div>
       </div>
