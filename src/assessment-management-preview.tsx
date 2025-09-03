@@ -637,16 +637,27 @@ const AssessmentManagementSystem = () => {
     }
   };
 
-  const assignToAllStudents = (assessmentId) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
-    if (!assessment) {
-      alert('Error: Assessment not found!');
-      return;
-    }
+ // Updated assignToAllStudents function
+const assignToAllStudents = async (assessmentFirebaseId) => {
+  console.log("assign to all students");
+  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+  if (!assessment) {
+    alert('Error: Assessment not found!');
+    return;
+  }
 
-    if (window.confirm(`Make "${assessment.title}" available to ALL students?`)) {
+  if (window.confirm(`Make "${assessment.title}" available to ALL students?`)) {
+    try {
+      // Update Firestore - empty array or null means all students
+      const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
+      await updateDoc(assessmentRef, {
+        assignedStudents: [], // Empty array means all students
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
       setAssessments(prev => prev.map(a => {
-        if (a.id === assessmentId) {
+        if (a.firebaseId === assessmentFirebaseId) {
           return {
             ...a,
             assignedStudents: []
@@ -656,21 +667,45 @@ const AssessmentManagementSystem = () => {
       }));
 
       alert(`Assessment "${assessment.title}" is now available to ALL students!`);
+    } catch (error) {
+      console.error("Error updating assessment:", error);
+      alert("Failed to update assessment. Please try again.");
     }
-  };
+  }
+};
 
-  const assignToSpecificStudents = (assessmentId) => {
-    const assessment = assessments.find(a => a.id === assessmentId);
-    if (!assessment) {
-      alert('Error: Assessment not found!');
-      return;
-    }
+// Updated assignToSpecificStudents function
+const assignToSpecificStudents = async (assessmentFirebaseId) => {
+  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+  if (!assessment) {
+    alert('Error: Assessment not found!');
+    return;
+  }
 
-    const specificStudents = students.slice(0, 3);
+  // Get active students for selection
+  const activeStudents = dbStudents.filter(student => student.isActive);
+  
+  if (activeStudents.length === 0) {
+    alert('No active students available for assignment.');
+    return;
+  }
 
-    if (window.confirm(`Assign "${assessment.title}" to specific students?`)) {
+  // For demo purposes, let's assign to first 3 students
+  // In a real implementation, you'd want to show a selection modal
+  const specificStudents = activeStudents.slice(0, Math.min(3, activeStudents.length)).map(s => s.email);
+
+  if (window.confirm(`Assign "${assessment.title}" to specific students: ${specificStudents.join(', ')}?`)) {
+    try {
+      // Update Firestore
+      const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
+      await updateDoc(assessmentRef, {
+        assignedStudents: specificStudents,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
       setAssessments(prev => prev.map(a => {
-        if (a.id === assessmentId) {
+        if (a.firebaseId === assessmentFirebaseId) {
           return {
             ...a,
             assignedStudents: specificStudents
@@ -680,8 +715,55 @@ const AssessmentManagementSystem = () => {
       }));
 
       alert(`Assessment "${assessment.title}" is now assigned to: ${specificStudents.join(', ')}`);
+    } catch (error) {
+      console.error("Error updating assessment:", error);
+      alert("Failed to update assessment. Please try again.");
     }
-  };
+  }
+};
+
+// Optional: More advanced function with student selection modal
+const assignToSpecificStudentsWithModal = async (assessmentFirebaseId) => {
+  const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+  if (!assessment) {
+    alert('Error: Assessment not found!');
+    return;
+  }
+
+  const activeStudents = dbStudents.filter(student => student.isActive);
+  
+  if (activeStudents.length === 0) {
+    alert('No active students available for assignment.');
+    return;
+  }
+
+  // Create a simple selection interface
+  const selectedStudents = [];
+  let selectionHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+  
+  activeStudents.forEach(student => {
+    const isCurrentlyAssigned = assessment.assignedStudents && assessment.assignedStudents.includes(student.email);
+    selectionHtml += `
+      <div style="margin: 5px 0;">
+        <label>
+          <input type="checkbox" ${isCurrentlyAssigned ? 'checked' : ''} 
+                 onchange="toggleStudent('${student.email}')" 
+                 style="margin-right: 8px;">
+          ${student.fullName} (${student.email})
+        </label>
+      </div>
+    `;
+  });
+  
+  selectionHtml += '</div>';
+  
+  // For now, use the simpler version above
+  // This would require implementing a proper modal system
+  alert('Student selection modal would appear here. Using simple assignment for now.');
+  
+  // Fall back to simple assignment
+  await assignToSpecificStudents(assessmentFirebaseId);
+};
 
   // Grading functions
   // UPDATED: gradeSubmission function to work with new data structure
@@ -1625,104 +1707,149 @@ const AssessmentManagementSystem = () => {
       </div>
     </div>
   );
+const isAssignedToAllStudents = (assignedStudents, allDbStudents) => {
+  // If no specific assignment, it means all students
+  if (!assignedStudents || assignedStudents.length === 0) {
+    return true;
+  }
+  
+  // Get active students from database
+  const activeStudents = allDbStudents.filter(student => student.isActive);
+  
+  if (activeStudents.length === 0) {
+    return false;
+  }
+  
+  // Convert assigned emails to usernames for comparison
+  const assignedUsernames = assignedStudents.map(email => {
+    const student = allDbStudents.find(s => s.email === email);
+    return student ? (student.username || student.fullName || student.email) : email;
+  });
+  
+  // Get active student usernames
+  const activeStudentUsernames = activeStudents.map(student => 
+    student.username || student.fullName || student.email
+  );
+  
+  // Debug logs
+  console.log('Assigned emails:', assignedStudents);
+  console.log('Converted to usernames:', assignedUsernames);
+  console.log('Active student usernames from DB:', activeStudentUsernames);
+  
+  // Check if assigned usernames array contains ALL active student usernames
+  return activeStudentUsernames.length === assignedUsernames.length && 
+         activeStudentUsernames.every(username => assignedUsernames.includes(username));
+};
 
+// Helper function to display student names properly
+const getDisplayStudentNames = (assignedStudents, dbStudents) => {
+  if (!assignedStudents || assignedStudents.length === 0) {
+    return [];
+  }
+  
+  // Convert emails to display names
+  return assignedStudents.map(email => {
+    const student = dbStudents.find(s => s.email === email);
+    return student ? student.fullName : email;
+  });
+};
   // Render Manage Assessments Tab
-  const renderManageAssessments = () => (
-    <div>
-      <h3>Manage Assessments</h3>
+ const renderManageAssessments = () => (
+  <div>
+    <h3>Manage Assessments</h3>
 
+    {assessments.length === 0 ? (
+      <div className="question-card">
+        <h4>No Assessments Found</h4>
+        <p>You haven't created any assessments yet.</p>
+        <button className="btn" onClick={() => setAdminActiveTab('create-assessment')}>
+          Create Your First Assessment
+        </button>
+      </div>
+    ) : (
+      assessments.map(assessment => {
+        const now = new Date();
+        const start = new Date(assessment.startDate);
+        const end = new Date(assessment.endDate);
 
-      {assessments.length === 0 ? (
-        <div className="question-card">
-          <h4>No Assessments Found</h4>
-          <p>You haven't created any assessments yet.</p>
-          <button className="btn" onClick={() => setAdminActiveTab('create-assessment')}>
-            Create Your First Assessment
-          </button>
-        </div>
-      ) : (
-        assessments.map(assessment => {
-          const now = new Date();
-          const start = new Date(assessment.startDate);
-          const end = new Date(assessment.endDate);
+        let statusClass = 'status-pending';
 
-          // let status = 'Scheduled';
-          let statusClass = 'status-pending';
+        if (now >= start && now <= end) {
+          statusClass = 'status-open';
+        } else if (now > end) {
+          statusClass = 'status-closed';
+        }
 
-          if (now >= start && now <= end) {
-            // status = 'Active';
-            statusClass = 'status-open';
-          } else if (now > end) {
-            // status = 'Closed';
-            statusClass = 'status-closed';
-          }
+        // Use the helper function to check if assigned to all students
+        const isAssignedToAll = isAssignedToAllStudents(assessment.assignedStudents, dbStudents);
+                const displayNames = getDisplayStudentNames(assessment.assignedStudents, dbStudents);
 
-          console.log('assessment id firebase', assessment.firebaseId);
-          // setCurrentAssessmentId(assessment.firebaseId);
-          return (
-            <div key={assessment.id} className="question-card">
-              <div className="question-header">
-                <h4>📝 {assessment.title}</h4>
-                <span className={`status-badge ${statusClass}`}>{assessment.status}</span>
-              </div>
-              <p>{assessment.description}</p>
-              <div className="question-meta">
-                <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
-                <strong>Max Score:</strong> {assessment.maxScore} points<br />
-                <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}<br />
-                <strong>Assigned to:</strong> {
-                  !assessment.assignedStudents || assessment.assignedStudents.length === 0
-                    ? <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL STUDENTS</span>
-                    : assessment.assignedStudents.join(', ')
-                }
-              </div>
-              <div style={{ marginTop: '15px' }}>
-                <button
-                  className="btn"
-                  onClick={() => addQuestionToAssessment(assessment.firebaseId, assessment.id)}
-                >
-                  Add Question
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => viewAssessmentQuestions(assessment.firebaseId)}
-                >
-                  View Questions
-                </button>
+        return (
+          <div key={assessment.id} className="question-card">
+            <div className="question-header">
+              <h4>📝 {assessment.title}</h4>
+              <span className={`status-badge ${statusClass}`}>{assessment.status}</span>
+            </div>
+            <p>{assessment.description}</p>
+            <div className="question-meta">
+              <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
+              <strong>Max Score:</strong> {assessment.maxScore} points<br />
+              <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}<br />
+              <strong>Assigned to:</strong> {
+                isAssignedToAll
+                  ? <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL STUDENTS</span>
+                  : displayNames.length > 0
+                    ? displayNames.join(', ') // 👈 SHOWS USERNAMES INSTEAD OF EMAILS
+                    : <span style={{ color: '#dc3545', fontWeight: 'bold' }}>NO STUDENTS ASSIGNED</span>
+                     }
+            </div>
+            <div style={{ marginTop: '15px' }}>
+              <button
+                className="btn"
+                onClick={() => addQuestionToAssessment(assessment.firebaseId, assessment.id)}
+              >
+                Add Question
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => viewAssessmentQuestions(assessment.firebaseId)}
+              >
+                View Questions
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={() => activateAssessmentNow(assessment.firebaseId)}
+              >
+                🚀 Activate Now
+              </button>
+              {isAssignedToAll ? (
                 <button
                   className="btn btn-success"
-                  onClick={() => activateAssessmentNow(assessment.firebaseId)}
+                  onClick={() => assignToSpecificStudents(assessment.firebaseId)}
                 >
-                  🚀 Activate Now
+                  Assign to Specific Students
                 </button>
-                {!assessment.assignedStudents || assessment.assignedStudents.length === 0 ? (
-                  <button
-                    className="btn btn-success"
-                    onClick={() => assignToSpecificStudents(assessment.firebaseId)}
-                  >
-                    Assign to Specific Students
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-success"
-                    onClick={() => assignToAllStudents(assessment.firebaseId)}
-                  >
-                    Assign to All Students
-                  </button>
-                )}
+              ) : (
                 <button
-                  className="btn btn-danger"
-                  onClick={() => deleteAssessment(assessment.firebaseId)}
+                  className="btn btn-success"
+                  onClick={() => assignToAllStudents(assessment.firebaseId)}
                 >
-                  Delete
+                  Assign to All Students
                 </button>
-              </div>
+              )}
+              <button
+                className="btn btn-danger"
+                onClick={() => deleteAssessment(assessment.firebaseId)}
+              >
+                Delete
+              </button>
             </div>
-          );
-        })
-      )}
-    </div>
-  );
+          </div>
+        );
+      })
+    )}
+  </div>
+);
 
   // Render Grade Submissions Tab
   const renderGradeSubmissions = () => {

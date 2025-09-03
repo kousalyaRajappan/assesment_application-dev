@@ -128,7 +128,7 @@ const StudentRegistrationForm = () => {
         mobile: formData.mobile.trim(),
         // Note: In production, hash the password before storing
         password: formData.password, // Consider using bcrypt or similar for hashing
-        username: formData.email.toLowerCase().trim(), // Use email as username
+        username: `${formData.firstName.trim()} ${formData.lastName.trim()}`, // Use email as username
         role: 'student',
         isActive: true,
         isEmailVerified: true, // Since we verified mobile, we can set this
