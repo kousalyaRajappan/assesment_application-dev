@@ -757,7 +757,7 @@ const AssessmentManagementSystem = () => {
   };
 
   // ULTIMATE FIX: Completely rewritten saveGrades 
-  const saveGrades = async () => {
+ const saveGrades = async () => {
   if (!selectedSubmission) return;
 
   const assessment = assessments.find(a => a.firebaseId === selectedSubmission.firebaseAssessmentId);
@@ -766,76 +766,86 @@ const AssessmentManagementSystem = () => {
     return;
   }
 
-  console.log('=== SAVING GRADES FOR ALL QUESTIONS ===');
+  const studentEmail = selectedSubmission.studentId;
+  const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
 
-  // Ensure we have scores for ALL questions
-  const completeQuestionScores = {};
+  if (!studentEmail) {
+    alert('Student email not found in submission');
+    return;
+  }
+
+  console.log('=== SAVING GRADES TO NESTED STRUCTURE ===');
+  console.log('Student:', studentEmail);
+
+  // Calculate total score
   let totalScore = 0;
+  const gradedQuestions = {};
 
   assessment.questions.forEach((question, index) => {
     const score = parseInt(gradingScores[question.id]) || 0;
-    completeQuestionScores[question.id] = score;
     totalScore += score;
-
+    
+    gradedQuestions[question.id] = score;
     console.log(`Question ${index + 1} (${question.id}): ${score}/${question.points} points`);
   });
 
   try {
-    const updatedSubmissions = { ...assessment.submissions };
+    // Get current assessment data
+    const assessmentRef = doc(db, "assessments", selectedSubmission.firebaseAssessmentId);
+    const currentDoc = await getDoc(assessmentRef);
+    const currentData = currentDoc.data();
+    const updatedSubmissions = { ...currentData.submissions };
 
-    // Save individual question data with scores using composite keys
-    assessment.questions.forEach(question => {
-      const questionId = question.id;
-      const compositeKey = `${questionId}_${selectedSubmission.studentName.replace(/\s+/g, '_')}`;
+    // Update the student's submission with grades nested under each question
+    if (updatedSubmissions[sanitizedEmail]) {
+      const studentSubmission = { ...updatedSubmissions[sanitizedEmail] };
+      
+      // Add grades to each question
+      const updatedQuestions = { ...studentSubmission.questions };
+      
+      assessment.questions.forEach(question => {
+        const questionId = question.id;
+        const questionGrade = gradedQuestions[questionId];
+        
+        if (updatedQuestions[questionId]) {
+          // Add grade to existing question data
+          updatedQuestions[questionId] = {
+            ...updatedQuestions[questionId],
+            grade: questionGrade,
+            maxPoints: question.points,
+            graded: true,
+            gradedAt: new Date().toISOString()
+          };
+        } else {
+          // Create question entry with grade (in case question wasn't submitted)
+          updatedQuestions[questionId] = {
+            answers: {},
+            grade: questionGrade,
+            maxPoints: question.points,
+            graded: true,
+            gradedAt: new Date().toISOString()
+          };
+        }
+      });
 
-      // Find existing submission entry for this student and question
-      const existingEntry = Object.entries(assessment.submissions).find(([key, data]) => 
-        data.questionId === questionId && data.studentName === selectedSubmission.studentName
-      );
+      // Update the student's complete submission
+      updatedSubmissions[sanitizedEmail] = {
+        ...studentSubmission,
+        questions: updatedQuestions,
+        totalScore: totalScore,
+        maxScore: assessment.maxScore,
+        graded: true,
+        gradedAt: new Date().toISOString(),
+        gradingComplete: true
+      };
 
-      if (existingEntry) {
-        const [existingKey, existingData] = existingEntry;
-        updatedSubmissions[existingKey] = {
-          ...existingData,
-          score: completeQuestionScores[questionId],
-          maxPoints: question.points,
-          graded: true,
-          gradedAt: new Date().toISOString()
-        };
-      } else {
-        // Create new entry with composite key
-        updatedSubmissions[compositeKey] = {
-          questionId: questionId,
-          studentName: selectedSubmission.studentName,
-          answers: {},
-          score: completeQuestionScores[questionId],
-          maxPoints: question.points,
-          graded: true,
-          gradedAt: new Date().toISOString(),
-          submittedAt: selectedSubmission.submittedAt || new Date().toISOString(),
-          isDraft: false
-        };
-      }
-    });
-
-    // Save master grading record
-    const masterKey = `GRADES_${selectedSubmission.studentName.replace(/\s+/g, '_')}`;
-    updatedSubmissions[masterKey] = {
-      studentName: selectedSubmission.studentName,
-      totalScore: totalScore,
-      maxScore: assessment.maxScore,
-      questionScores: completeQuestionScores,
-      questionsCount: assessment.questions.length,
-      graded: true,
-      gradedAt: new Date().toISOString(),
-      assessmentId: selectedSubmission.assessmentId,
-      firebaseAssessmentId: selectedSubmission.firebaseAssessmentId
-    };
-
-    console.log('Saving complete grading data:', updatedSubmissions[masterKey]);
+      console.log('Updated student submission with nested grades:', updatedSubmissions[sanitizedEmail]);
+    } else {
+      alert('Student submission not found');
+      return;
+    }
 
     // Update Firestore
-    const assessmentRef = doc(db, "assessments", selectedSubmission.firebaseAssessmentId);
     await updateDoc(assessmentRef, {
       submissions: updatedSubmissions,
       lastGradedAt: new Date().toISOString()
@@ -850,15 +860,19 @@ const AssessmentManagementSystem = () => {
       )
     );
 
-    console.log(`✅ Successfully saved grades for ALL ${assessment.questions.length} questions`);
+    console.log(`Successfully saved nested grades for: ${selectedSubmission.studentName}`);
+    console.log(`Total: ${totalScore}/${assessment.maxScore} points`);
 
     setShowGradingModal(false);
     setSelectedSubmission(null);
-    alert(`✅ Graded ALL ${assessment.questions.length} questions successfully!\nTotal: ${totalScore}/${assessment.maxScore} points`);
+    setGradingScores({});
+
+    const percentage = ((totalScore / assessment.maxScore) * 100).toFixed(1);
+    alert(`Graded successfully!\nStudent: ${selectedSubmission.studentName}\nTotal: ${totalScore}/${assessment.maxScore} points (${percentage}%)`);
 
   } catch (error) {
-    console.error("Error saving grades:", error);
-    alert("Failed to save grades. Check console.");
+    console.error("Error saving nested grades:", error);
+    alert("Failed to save grades. Please try again.");
   }
 };
   const closeGradingModal = () => {
@@ -886,28 +900,63 @@ const AssessmentManagementSystem = () => {
     });
   };
 
-  const takeAssessment = (assessmentId, fieldId) => {
-    console.log("assessment id take", assessmentId);
-    const assessment = assessments.find(a => a.id === fieldId);
-    if (!assessment || !assessment.questions) {
-      alert('Assessment not found or has no questions');
-      return;
-    }
+  const takeAssessment = (assessmentFirebaseId, assessmentId) => {
+  console.log("Taking assessment:", assessmentFirebaseId, assessmentId);
+  
+  const assessment = assessments.find(a => a.id === assessmentId);
+  if (!assessment || !assessment.questions) {
+    alert('Assessment not found or has no questions');
+    return;
+  }
 
-    const now = new Date();
-    const end = new Date(assessment.endDate);
+  const now = new Date();
+  const end = new Date(assessment.endDate);
 
-    if (now > end) {
-      alert('This assessment has ended');
-      return;
-    }
+  if (now > end) {
+    alert('This assessment has ended');
+    return;
+  }
 
-    setCurrentAssessmentId(assessmentId);
-    setFileId(fieldId)
-    setAssessmentAnswers({});
-    setShowAssessmentModal(true);
-    startTimer(end);
-  };
+  // Check if student has existing answers (for continuation)
+  const currentStudentEmail = currentUser?.email;
+  const sanitizedEmail = currentStudentEmail.replace('@', '_').replace(/\./g, '_');
+  const existingSubmission = assessment.submissions?.[sanitizedEmail];
+
+  // Pre-fill answers if they exist
+  const prefilledAnswers = {};
+  
+  if (existingSubmission && existingSubmission.questions) {
+    console.log("Found existing submission, pre-filling answers:", existingSubmission.questions);
+    
+    // Convert existing answers back to the form field format
+    Object.entries(existingSubmission.questions).forEach(([questionId, questionData]) => {
+      if (questionData.answers) {
+        Object.entries(questionData.answers).forEach(([answerType, answerValue]) => {
+          const fieldName = `${questionId}_${answerType}`;
+          prefilledAnswers[fieldName] = answerValue;
+          console.log(`Pre-filling field ${fieldName} with:`, answerValue);
+        });
+      }
+    });
+  }
+
+  console.log("Pre-filled answers object:", prefilledAnswers);
+
+  // Set the assessment state
+  setCurrentAssessmentId(assessmentFirebaseId);
+  setFileId(assessmentId);
+  setAssessmentAnswers(prefilledAnswers); // Pre-fill with existing answers
+  setShowAssessmentModal(true);
+  startTimer(end);
+
+  // Show continuation message if there are pre-filled answers
+  if (Object.keys(prefilledAnswers).length > 0) {
+    const questionCount = Object.keys(existingSubmission.questions).length;
+    setTimeout(() => {
+      alert(`Continuing your assessment...\nYour previous answers to ${questionCount} questions have been loaded.`);
+    }, 500);
+  }
+};
 
   const startTimer = (endDate) => {
     const updateTimer = () => {
@@ -938,108 +987,135 @@ const AssessmentManagementSystem = () => {
   };
 
 
+// Complete submission system based on student email
+// Much cleaner submission system - ONE record per student per assessment
+const submitAssessmentWithAnswers = async () => {
+  try {
+    if (!currentAssessmentId) {
+      alert("No assessment ID found");
+      return;
+    }
 
-  const submitAssessmentWithAnswers = async () => {
-    try {
-      if (!currentAssessmentId) {
-        alert("No assessment ID found");
-        return;
-      }
+    const assessment = assessments.find((a) => a.id === fileId);
+    if (!assessment) {
+      alert("Assessment not found");
+      return;
+    }
 
-      const assessment = assessments.find((a) => a.id === fileId);
-      if (!assessment) {
-        alert("Assessment not found");
-        return;
-      }
+    const studentEmail = currentUser.email;
+    const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
+    
+    // Consolidate all question answers for this student
+    const studentQuestions = {};
 
-      const submissionsObj: Record<string, any> = {};
+    assessment.questions.forEach((question) => {
+      const questionAnswers = {};
+      let hasAnyAnswer = false;
 
-      assessment.questions.forEach((question) => {
-        const questionAnswers: Record<string, string> = {};
-        let hasAnyAnswer = false;
+      question.types.forEach((type) => {
+        const fieldName = `${question.id}_${type}`;
+        const answer = assessmentAnswers[fieldName];
 
-        question.types.forEach((type) => {
-          const fieldName = `${question.id}_${type}`;
-          const answer = assessmentAnswers[fieldName];
-
-          if (answer && answer.toString().trim()) {
-            questionAnswers[type] = answer.toString().trim();
-            hasAnyAnswer = true;
-          }
-        });
-
-        if (hasAnyAnswer) {
-          submissionsObj[question.id] = {
-            studentId:currentUser.email,           // ✅ unique student id
-            studentName: currentUser.username,    // ✅ student name
-            assessmentId: fileId,                 // ✅ custom assessment id
-            firebaseAssessmentId: currentAssessmentId, // ✅ Firestore doc id
-            answers: questionAnswers,
-            submittedAt: new Date().toISOString(),       // ✅ server timestamp
-            isDraft: false,
-          };
+        if (answer && answer.toString().trim()) {
+          questionAnswers[type] = answer.toString().trim();
+          hasAnyAnswer = true;
         }
       });
 
-      const assessmentRef = doc(db, "assessments", currentAssessmentId);
-      // ✅ MERGE instead of overwrite
-      await updateDoc(assessmentRef, {
-        submissions: submissionsObj,
-        updatedAt: new Date().toISOString(),
-      });
-
-      // ✅ Update local state
-      setAssessments((prev) =>
-        prev.map((a) =>
-          a.firebaseId === currentAssessmentId
-            ? {
-              ...a,
-              submissions: {
-                ...(a.submissions || {}),
-                ...submissionsObj,
-              },
-            }
-            : a
-        )
-      );
-      let submission = submissions.find(
-        (s) =>
-          s.assessmentId === fileId &&
-          s.studentName === currentUser.username
-      );
-
-      if (!submission) {
-        submission = {
-          id: "sub_" + Date.now(),
-          assessmentId: fileId,
-          studentName: currentUser.username,
-          answers: submissionsObj,
+      if (hasAnyAnswer) {
+        // Store answers under question ID
+        studentQuestions[question.id] = {
+          answers: questionAnswers,
           submittedAt: new Date().toISOString(),
-          isDraft: false,
         };
-        setSubmissions((prev) => [...prev, submission]);
-      } else {
-        submission.answers = submissionsObj;
-        submission.isDraft = false;
-        submission.submittedAt = new Date().toISOString();
-        setSubmissions((prev) =>
-          prev.map((s) => (s.id === submission.id ? submission : s))
-        );
       }
+    });
 
-      setShowAssessmentModal(false);
-      if (currentTimer) {
-        clearInterval(currentTimer);
-        setCurrentTimer(null);
-      }
+    // Create ONE submission record per student (using email as key)
+    const studentSubmissionKey = sanitizedEmail;  // Clean key: alice_example_com
+    
+    const studentSubmissionData = {
+      studentId: studentEmail,
+      studentName: currentUser.username,
+      assessmentId: fileId,
+      firebaseAssessmentId: currentAssessmentId,
+      questions: studentQuestions,                    // All question answers nested here
+      submittedAt: new Date().toISOString(),
+      questionsAnswered: Object.keys(studentQuestions).length,
+      totalQuestions: assessment.questions.length,
+      isDraft: false,
+      submissionComplete: true
+    };
 
-      alert("ASSESSMENT SUBMITTED SUCCESSFULLY!");
-    } catch (error: any) {
-      console.error("Error during submission:", error);
-      alert(`Error during submission: ${error.message}`);
+    console.log('Creating single submission for student:', studentEmail);
+    console.log('Questions answered:', Object.keys(studentQuestions));
+
+    // Get current assessment and merge submissions
+    const assessmentRef = doc(db, "assessments", currentAssessmentId);
+    const currentDoc = await getDoc(assessmentRef);
+    const currentData = currentDoc.data();
+    const existingSubmissions = currentData.submissions || {};
+
+    // Add/Update this student's submission
+    const updatedSubmissions = {
+      ...existingSubmissions,
+      [studentSubmissionKey]: studentSubmissionData
+    };
+
+    await updateDoc(assessmentRef, {
+      submissions: updatedSubmissions,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update local state
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.firebaseId === currentAssessmentId
+          ? { ...a, submissions: updatedSubmissions }
+          : a
+      )
+    );
+
+    // Update local submissions state
+    let submission = submissions.find(
+      (s) =>
+        s.assessmentId === fileId &&
+        s.studentName === currentUser.username
+    );
+
+    if (!submission) {
+      submission = {
+        id: "sub_" + Date.now(),
+        assessmentId: fileId,
+        studentName: currentUser.username,
+        studentEmail: studentEmail,
+        answers: studentQuestions,
+        submittedAt: new Date().toISOString(),
+        isDraft: false,
+      };
+      setSubmissions((prev) => [...prev, submission]);
+    } else {
+      submission.answers = studentQuestions;
+      submission.isDraft = false;
+      submission.submittedAt = new Date().toISOString();
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === submission.id ? submission : s))
+      );
     }
-  };
 
+    setShowAssessmentModal(false);
+    if (currentTimer) {
+      clearInterval(currentTimer);
+      setCurrentTimer(null);
+    }
+
+    alert(`SUBMISSION SUCCESS!\n${currentUser.username} (${studentEmail})\nAnswered: ${Object.keys(studentQuestions).length}/${assessment.questions.length} questions`);
+    
+  } catch (error) {
+    console.error("Error during submission:", error);
+    alert(`Error during submission: ${error.message}`);
+  }
+};
   const closeAssessmentModal = () => {
     setShowAssessmentModal(false);
     if (currentTimer) {
@@ -1056,31 +1132,38 @@ const AssessmentManagementSystem = () => {
   };
 
   // Student view functions
-  const viewMyAnswers = (submissionId) => {
-    // Get submissions using the same function as renderMySubmissions
-    const mySubmissions = extractSubmissionsFromAssessments();
-    const submission = mySubmissions.find(s => s.id === submissionId);
+ // Updated viewMyAnswers function
+const viewMyAnswers = (submissionId) => {
+  console.log('Looking for submission with ID:', submissionId);
+  
+  // Get submissions using the updated extraction function
+  const mySubmissions = extractSubmissionsFromAssessments();
+  console.log('Available submissions:', mySubmissions.map(s => s.id));
+  
+  const submission = mySubmissions.find(s => s.id === submissionId);
 
-    if (!submission) {
-      alert('Submission not found');
-      return;
-    }
+  if (!submission) {
+    console.error('Submission not found. Available IDs:', mySubmissions.map(s => s.id));
+    alert(`Submission not found. Looking for: ${submissionId}`);
+    return;
+  }
 
-    const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-    if (!assessment) {
-      alert('Assessment not found');
-      return;
-    }
+  const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+  if (!assessment) {
+    alert('Assessment not found');
+    return;
+  }
 
-    console.log("Submission data:", submission);
-    console.log("Submission answers:", submission.answers);
+  console.log("Found submission data:", submission);
+  console.log("Submission answers:", submission.answers);
 
-    setSelectedSubmission({
-      ...submission,
-      assessment: assessment
-    });
-    setShowAssessmentModal(true);
-  };
+  setSelectedSubmission({
+    ...submission,
+    assessment: assessment
+  });
+  setShowAssessmentModal(true);
+};
+
 
   const viewDetailedResults = (submissionId) => {
     // Use the same data extraction method
@@ -2073,7 +2156,7 @@ const renderViewResults = () => {
     </div>
   );
 
-  const renderAvailableAssessments = () => {
+ const renderAvailableAssessments = () => {
   const myAssessments = loadStudentAssessments();
   const now = new Date();
 
@@ -2095,42 +2178,85 @@ const renderViewResults = () => {
           let statusClass = 'status-pending';
           let actionButton = '';
 
-          // Check if current student has submitted - filter by student name
-          const currentStudentName = currentUser.username; // or however you get current student name
+          // Check if current student has submitted this assessment
+          const currentStudentEmail = currentUser.email;
+          const sanitizedEmail = currentStudentEmail.replace('@', '_').replace(/\./g, '_');
           
-          const hasCurrentStudentSubmission = assessment.submissions && 
-            Object.values(assessment.submissions).some(sub =>
-              sub.studentName === currentStudentName && 
-              sub.answers && 
-              Object.keys(sub.answers).length > 0
-            );
+          const currentStudentSubmission = assessment.submissions && assessment.submissions[sanitizedEmail];
+          const hasSubmitted = currentStudentSubmission && currentStudentSubmission.questions;
+          
+          // Check if student completed ALL questions
+          const totalQuestions = assessment.questions ? assessment.questions.length : 0;
+          const questionsAnswered = hasSubmitted ? Object.keys(currentStudentSubmission.questions).length : 0;
+          const isCompleted = hasSubmitted && (questionsAnswered === totalQuestions);
 
-          // Get current student's submission for score display
-          const currentStudentSubmission = assessment.submissions && 
-            Object.values(assessment.submissions).find(sub =>
-              sub.studentName === currentStudentName
-            );
+          // Check if assessment is graded
+          const gradesKey = `GRADES_${sanitizedEmail}`;
+          const isGraded = assessment.submissions && assessment.submissions[gradesKey];
+          const gradeData = isGraded ? assessment.submissions[gradesKey] : null;
 
           if (now >= start && now <= end) {
             status = 'Active';
             statusClass = 'status-open';
 
-            if (hasCurrentStudentSubmission) {
-              // Show submission status with score if graded
-              if (currentStudentSubmission && currentStudentSubmission.graded) {
-                const studentTotalScore = currentStudentSubmission.score || 0; // You might need to calculate total here too
-                const percentage = ((studentTotalScore / assessment.maxScore) * 100).toFixed(1);
+            if (isCompleted) {
+              // Student has completed all questions
+              if (isGraded) {
+                const percentage = ((gradeData.totalScore / assessment.maxScore) * 100).toFixed(1);
                 actionButton = (
-                  <span className="status-badge status-open">
-                    ✅ Submitted & Graded ({studentTotalScore}/{assessment.maxScore} - {percentage}%)
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="status-badge status-open">
+                      ✅ Completed & Graded ({gradeData.totalScore}/{assessment.maxScore} - {percentage}%)
+                    </span>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => viewMyAnswers(`sub_${assessment.id}_${sanitizedEmail}`)}
+                    >
+                      View Results
+                    </button>
+                  </div>
                 );
               } else {
-                actionButton = <span className="status-badge status-open">✅ Submitted (Pending Grade)</span>;
+                actionButton = (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="status-badge status-open">
+                      ✅ Assessment Completed - Awaiting Grade
+                    </span>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => viewMyAnswers(`sub_${assessment.id}_${sanitizedEmail}`)}
+                    >
+                      Review My Answers
+                    </button>
+                  </div>
+                );
               }
-            } else {
+            } else if (hasSubmitted && questionsAnswered < totalQuestions) {
+              // Student has partial submission - allow continue
               actionButton = (
-                <button className="btn" onClick={() => takeAssessment(assessment.firebaseId, assessment.id)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ 
+                    color: '#ffc107', 
+                    fontWeight: 'bold', 
+                    fontSize: '14px' 
+                  }}>
+                    📝 In Progress ({questionsAnswered}/{totalQuestions} questions)
+                  </span>
+                  <button 
+                    className="btn btn-warning" 
+                    onClick={() => takeAssessment(assessment.firebaseId, assessment.id)}
+                  >
+                    Continue Assessment
+                  </button>
+                </div>
+              );
+            } else {
+              // Fresh start - no submission yet
+              actionButton = (
+                <button 
+                  className="btn" 
+                  onClick={() => takeAssessment(assessment.firebaseId, assessment.id)}
+                >
                   Take Assessment
                 </button>
               );
@@ -2139,21 +2265,55 @@ const renderViewResults = () => {
             status = 'Closed';
             statusClass = 'status-closed';
             
-            if (hasCurrentStudentSubmission && currentStudentSubmission && currentStudentSubmission.graded) {
-              const studentTotalScore = currentStudentSubmission.score || 0;
-              const percentage = ((studentTotalScore / assessment.maxScore) * 100).toFixed(1);
+            if (isCompleted && isGraded) {
+              const percentage = ((gradeData.totalScore / assessment.maxScore) * 100).toFixed(1);
+              actionButton = (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="status-badge status-closed">
+                    Assessment Ended - Final Score: {gradeData.totalScore}/{assessment.maxScore} ({percentage}%)
+                  </span>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => viewMyAnswers(`sub_${assessment.id}_${sanitizedEmail}`)}
+                  >
+                    View Results
+                  </button>
+                </div>
+              );
+            } else if (isCompleted) {
+              actionButton = (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="status-badge status-closed">
+                    Assessment Ended - Completed, Awaiting Grade
+                  </span>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => viewMyAnswers(`sub_${assessment.id}_${sanitizedEmail}`)}
+                  >
+                    Review Answers
+                  </button>
+                </div>
+              );
+            } else if (hasSubmitted) {
               actionButton = (
                 <span className="status-badge status-closed">
-                  Assessment Ended - Final Score: {studentTotalScore}/{assessment.maxScore} ({percentage}%)
+                  Assessment Ended - Partial Submission ({questionsAnswered}/{totalQuestions} questions)
                 </span>
               );
-            } else if (hasCurrentStudentSubmission) {
-              actionButton = <span className="status-badge status-closed">Assessment Ended - Awaiting Grade</span>;
             } else {
-              actionButton = <span className="status-badge status-closed">Assessment Ended - Not Submitted</span>;
+              actionButton = (
+                <span className="status-badge status-closed">
+                  Assessment Ended - Not Submitted
+                </span>
+              );
             }
           } else {
-            actionButton = <button className="btn btn-secondary" disabled>Not Started</button>;
+            // Assessment not started yet
+            actionButton = (
+              <button className="btn btn-secondary" disabled>
+                Not Started Yet
+              </button>
+            );
           }
 
           return (
@@ -2166,17 +2326,18 @@ const renderViewResults = () => {
               <div className="question-meta">
                 <strong>Duration:</strong> {new Date(assessment.startDate).toLocaleString()} - {new Date(assessment.endDate).toLocaleString()}<br />
                 <strong>Max Score:</strong> {assessment.maxScore} points<br />
-                <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}
+                <strong>Questions:</strong> {totalQuestions}
                 
                 {/* Show submission details if student has submitted */}
-                {currentStudentSubmission && (
+                {hasSubmitted && (
                   <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-                    <strong>Your Submission:</strong><br />
+                    <strong>Your Progress:</strong><br />
                     <small>
-                      Submitted: {new Date(currentStudentSubmission.submittedAt).toLocaleString()}<br />
-                      Status: {currentStudentSubmission.isDraft ? 'Draft' : 'Final'}<br />
-                      {currentStudentSubmission.graded && currentStudentSubmission.gradedAt && (
-                        <>Graded: {new Date(currentStudentSubmission.gradedAt).toLocaleString()}</>
+                      Questions Answered: {questionsAnswered}/{totalQuestions}<br />
+                      Last Updated: {new Date(currentStudentSubmission.submittedAt).toLocaleString()}<br />
+                      Status: {isCompleted ? 'Completed' : 'In Progress'}
+                      {isGraded && isCompleted && (
+                        <><br />Grade: {gradeData.totalScore}/{assessment.maxScore} points</>
                       )}
                     </small>
                   </div>
@@ -2193,146 +2354,176 @@ const renderViewResults = () => {
   );
 };
 
-// Updated function for admin to view all submissions
-const extractAllSubmissionsFromAssessments = () => {
-  const allSubmissions = [];
-
-  assessments.forEach(assessment => {
-    if (assessment.submissions) {
-      // Group submissions by student name for this assessment
-      const studentSubmissions = {};
-
-      Object.entries(assessment.submissions).forEach(([submissionKey, submissionData]) => {
-        const studentName = submissionData.studentName;
-
-        // Skip GRADES_ entries, we'll process them separately
-        if (submissionKey.startsWith('GRADES_')) {
-          return;
-        }
-
-        if (!studentSubmissions[studentName]) {
-          studentSubmissions[studentName] = {
-            id: `sub_${assessment.id}_${studentName.replace(/\s+/g, '_')}`,
-            assessmentId: assessment.id,
-            firebaseAssessmentId: assessment.firebaseId,
-            assessmentTitle: assessment.title,
-            assessmentMaxScore: assessment.maxScore,
-            studentName: studentName,
-            answers: {},
-            submittedAt: submissionData.submittedAt,
-            isDraft: submissionData.isDraft || false,
-            lastModified: submissionData.lastModified || submissionData.submittedAt,
-            graded: false,
-            totalScore: 0,
-            questionScores: {},
-            gradedAt: null
-          };
-        }
-
-        // Extract question ID from composite key or use questionId field
-        const questionId = submissionData.questionId;
-        if (questionId) {
-          // Add this question's answers to the grouped submission
-          studentSubmissions[studentName].answers[questionId] = submissionData.answers;
-          
-          // Add this question's score if it exists
-          const questionScore = submissionData.score || 0;
-          studentSubmissions[studentName].questionScores[questionId] = questionScore;
-          studentSubmissions[studentName].totalScore += questionScore;
-        }
-      });
-
-      // Process GRADES_ entries to update grading status
-      Object.entries(assessment.submissions).forEach(([key, data]) => {
-        if (key.startsWith('GRADES_')) {
-          const studentName = data.studentName;
-          if (studentSubmissions[studentName]) {
-            studentSubmissions[studentName].graded = data.graded || false;
-            studentSubmissions[studentName].gradedAt = data.gradedAt;
-            studentSubmissions[studentName].totalScore = data.totalScore || 0;
-            studentSubmissions[studentName].questionScores = data.questionScores || {};
-          }
-        }
-      });
-
-      // Add all student submissions for this assessment
-      Object.values(studentSubmissions).forEach(submission => {
-        allSubmissions.push(submission);
-      });
-    }
-  });
-
-  return allSubmissions;
+// Helper function to check if student completed an assessment
+const hasStudentCompletedAssessment = (assessment, studentEmail) => {
+  if (!assessment.submissions || !studentEmail) return false;
+  
+  const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
+  const studentSubmission = assessment.submissions[sanitizedEmail];
+  
+  if (!studentSubmission || !studentSubmission.questions) return false;
+  
+  const totalQuestions = assessment.questions ? assessment.questions.length : 0;
+  const questionsAnswered = Object.keys(studentSubmission.questions).length;
+  
+  return questionsAnswered === totalQuestions;
 };
 
-// Updated function for students to view their own submissions
-const extractSubmissionsFromAssessments = () => {
+// Helper function to get student's assessment progress
+const getStudentAssessmentProgress = (assessment, studentEmail) => {
+  if (!assessment.submissions || !studentEmail) return null;
+  
+  const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
+  const studentSubmission = assessment.submissions[sanitizedEmail];
+  
+  if (!studentSubmission) return null;
+  
+  const totalQuestions = assessment.questions ? assessment.questions.length : 0;
+  const questionsAnswered = studentSubmission.questions ? Object.keys(studentSubmission.questions).length : 0;
+  
+  const gradesKey = `GRADES_${sanitizedEmail}`;
+  const gradeData = assessment.submissions[gradesKey];
+  
+  return {
+    submitted: true,
+    questionsAnswered: questionsAnswered,
+    totalQuestions: totalQuestions,
+    isCompleted: questionsAnswered === totalQuestions,
+    isGraded: !!gradeData,
+    gradeData: gradeData,
+    submittedAt: studentSubmission.submittedAt,
+    submissionData: studentSubmission
+  };
+};
+
+const extractAllSubmissionsFromAssessments = () => {
   const allSubmissions = [];
 
   assessments.forEach(assessment => {
     if (!assessment.submissions) return;
 
-    // Find GRADES_ entries for current user
-    const gradingEntries = Object.entries(assessment.submissions).filter(([key, data]) =>
-      key.startsWith('GRADES_') && data.studentName === currentUser?.username
-    );
-
-    gradingEntries.forEach(([gradingKey, gradingData]) => {
-      const studentName = gradingData.studentName;
-
-      console.log(`Processing submission for ${studentName}:`, gradingData);
-
-      // Collect answers from individual question entries with composite keys
-      const answers = {};
-      const individualScores = {};
-
-      // Updated: Look for composite key entries that belong to this student
-      const questionEntries = Object.entries(assessment.submissions).filter(([key, data]) => {
-        return !key.startsWith('GRADES_') && 
-               data.studentName === studentName &&
-               data.questionId; // Make sure it has questionId
-      });
-
-      console.log(`Found ${questionEntries.length} question entries for ${studentName}`);
-
-      questionEntries.forEach(([compositeKey, questionData]) => {
-        const questionId = questionData.questionId;
-        
-        answers[questionId] = {
-          answers: questionData.answers || {},
-          score: questionData.score || 0,
-          graded: questionData.graded || false
-        };
-
-        // Use the actual question score from the individual question entry
-        individualScores[questionId] = questionData.score || 0;
-      });
-
-      console.log('Individual scores collected:', individualScores);
+    Object.entries(assessment.submissions).forEach(([key, data]) => {
+      // Skip any non-student records (if they exist)
+      if (!data.studentId || !data.questions) return;
 
       const submission = {
-        id: `sub_${assessment.id}_${studentName.replace(/\s+/g, '_')}`,
+        id: `sub_${assessment.id}_${key}`,
         assessmentId: assessment.id,
         firebaseAssessmentId: assessment.firebaseId,
         assessmentTitle: assessment.title,
         assessmentMaxScore: assessment.maxScore,
-        studentName: studentName,
-        answers: answers,
-        scores: individualScores,
-        submittedAt: questionEntries[0]?.[1]?.submittedAt || new Date().toISOString(),
-        graded: gradingData.graded || false,
-        score: gradingData.totalScore || 0,
-        gradedAt: gradingData.gradedAt,
-        isDraft: false
+        studentId: data.studentId,
+        studentName: data.studentName,
+        answers: data.questions,                    // Questions with answers AND grades
+        submittedAt: data.submittedAt,
+        questionsAnswered: Object.keys(data.questions).length,
+        isDraft: data.isDraft || false,
+        graded: data.graded || false,
+        totalScore: data.totalScore || 0,
+        gradedAt: data.gradedAt,
+        questionScores: {}                          // Will be populated below
       };
 
-      console.log('Final submission object:', submission);
+      // Extract individual question scores from nested structure
+      Object.entries(data.questions).forEach(([questionId, questionData]) => {
+        if (questionData.grade !== undefined) {
+          submission.questionScores[questionId] = questionData.grade;
+        }
+      });
+
+      // Also add scores property for compatibility
+      submission.scores = submission.questionScores;
+
       allSubmissions.push(submission);
     });
   });
 
+  console.log('Extracted submissions with nested grades:', allSubmissions);
   return allSubmissions;
 };
+
+// Updated student extraction function
+const extractSubmissionsFromAssessments = () => {
+  const currentStudentEmail = currentUser?.email;
+  if (!currentStudentEmail) return [];
+
+  const mySubmissions = [];
+  const sanitizedEmail = currentStudentEmail.replace('@', '_').replace(/\./g, '_');
+
+  assessments.forEach(assessment => {
+    if (!assessment.submissions) return;
+
+    const submissionData = assessment.submissions[sanitizedEmail];
+
+    if (submissionData && submissionData.questions) {
+      const submission = {
+        id: `sub_${assessment.id}_${sanitizedEmail}`,
+        assessmentId: assessment.id,
+        firebaseAssessmentId: assessment.firebaseId,
+        assessmentTitle: assessment.title,
+        assessmentMaxScore: assessment.maxScore,
+        studentId: currentStudentEmail,
+        studentName: currentUser.username,
+        answers: submissionData.questions,          // Questions with answers AND grades
+        submittedAt: submissionData.submittedAt,
+        questionsAnswered: Object.keys(submissionData.questions).length,
+        graded: submissionData.graded || false,
+        totalScore: submissionData.totalScore || 0,
+        gradedAt: submissionData.gradedAt,
+        isDraft: false,
+        questionScores: {},
+        scores: {}
+      };
+
+      // Extract individual question grades from nested structure
+      Object.entries(submissionData.questions).forEach(([questionId, questionData]) => {
+        if (questionData.grade !== undefined) {
+          submission.questionScores[questionId] = questionData.grade;
+          submission.scores[questionId] = questionData.grade;
+        }
+      });
+
+      // Set overall score from nested data
+      submission.score = submissionData.totalScore || 0;
+
+      mySubmissions.push(submission);
+    }
+  });
+
+  return mySubmissions;
+};
+
+// Helper function to get grade for specific question
+const getQuestionGrade = (assessment, studentEmail, questionId) => {
+  const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
+  const studentSubmission = assessment.submissions?.[sanitizedEmail];
+  
+  if (studentSubmission && studentSubmission.questions && studentSubmission.questions[questionId]) {
+    return studentSubmission.questions[questionId].grade;
+  }
+  
+  return null;
+};
+
+// Helper function to get all grades for a student
+const getAllGradesForStudent = (assessment, studentEmail) => {
+  const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
+  const studentSubmission = assessment.submissions?.[sanitizedEmail];
+  
+  if (!studentSubmission || !studentSubmission.questions) {
+    return {};
+  }
+
+  const grades = {};
+  Object.entries(studentSubmission.questions).forEach(([questionId, questionData]) => {
+    if (questionData.grade !== undefined) {
+      grades[questionId] = questionData.grade;
+    }
+  });
+
+  return grades;
+};
+
   const renderMySubmissions = () => {
     const mySubmissions = extractSubmissionsFromAssessments();
 
