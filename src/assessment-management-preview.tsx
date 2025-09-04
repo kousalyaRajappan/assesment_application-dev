@@ -3974,7 +3974,7 @@ const AssessmentManagementSystem = () => {
       { value: 'text', label: '📝 Text Answer', description: 'Written response' },
       { value: 'file', label: '📎 File Upload', description: 'Image file' },
       { value: 'url', label: '🔗 URL Link', description: 'Repository link' },
-      { value: 'voice', label: '🎤 Voice Recording', description: 'Audio recording' },
+      // { value: 'voice', label: '🎤 Voice Recording', description: 'Audio recording' },
       { value: 'code', label: '💻 Code Snippet', description: 'Programming code' }
     ];
 

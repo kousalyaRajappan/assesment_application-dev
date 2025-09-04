@@ -312,12 +312,12 @@ const StudentRegistrationForm = () => {
               >
                 Go to Login
               </button>
-              <button 
+              {/* <button 
                 onClick={resetForm}
                 className="bg-gray-600 text-white px-8 py-4 rounded-xl text-base font-medium hover:bg-gray-700 transition-colors shadow-lg font-sans"
               >
                 Register Another Student
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
