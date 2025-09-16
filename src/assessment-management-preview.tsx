@@ -4,6 +4,7 @@ import { collection, addDoc, getDocs, updateDoc, doc, arrayUnion, deleteDoc, get
 
 import { db } from "./firebaseConfig";
 import { useNavigate } from 'react-router-dom';
+import ViewResults from './components/ViewResults';
 
 const AssessmentManagementSystem = () => {
   // State management
@@ -2280,52 +2281,60 @@ const AssessmentManagementSystem = () => {
 
   // Render View Results Tab
   // Render View Results Tab
+  // const renderViewResults = () => {
+  //   const allSubmissions = extractAllSubmissionsFromAssessments();
+  //   const gradedSubmissions = allSubmissions.filter(s => s.graded);
+
+  //   return (
+  //     <div>
+  //       <h3>Assessment Results</h3>
+
+  //       {gradedSubmissions.length === 0 ? (
+  //         <p>No graded submissions yet.</p>
+  //       ) : (
+  //         gradedSubmissions.map(submission => {
+  //           const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+  //           if (!assessment) return null;
+
+  //           // Use totalScore instead of submission.score
+  //           const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+
+  //           return (
+  //             <div key={submission.id} className="question-card">
+  //               <div className="question-header">
+  //                 <h4>📊 {assessment.title} - {submission.studentName}</h4>
+  //                 <span className="status-badge status-open">{percentage}%</span>
+  //               </div>
+  //               <div className="question-meta">
+  //                 <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
+  //                 <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+  //                 <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+
+  //                 {/* Optional: Show question breakdown
+  //               {Object.keys(submission.questionScores).length > 0 && (
+  //                 <div style={{ marginTop: '10px' }}>
+  //                   <strong>Question Breakdown:</strong>
+  //                   <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+  //                     {Object.entries(submission.questionScores).map(([questionId, score]) => (
+  //                       <div key={questionId}>Question {questionId}: {score} points</div>
+  //                     ))}
+  //                   </div>
+  //                 </div>
+  //               )} */}
+  //               </div>
+  //             </div>
+  //           );
+  //         })
+  //       )}
+  //     </div>
+  //   );
+  // };
   const renderViewResults = () => {
-    const allSubmissions = extractAllSubmissionsFromAssessments();
-    const gradedSubmissions = allSubmissions.filter(s => s.graded);
-
     return (
-      <div>
-        <h3>Assessment Results</h3>
-
-        {gradedSubmissions.length === 0 ? (
-          <p>No graded submissions yet.</p>
-        ) : (
-          gradedSubmissions.map(submission => {
-            const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-            if (!assessment) return null;
-
-            // Use totalScore instead of submission.score
-            const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
-
-            return (
-              <div key={submission.id} className="question-card">
-                <div className="question-header">
-                  <h4>📊 {assessment.title} - {submission.studentName}</h4>
-                  <span className="status-badge status-open">{percentage}%</span>
-                </div>
-                <div className="question-meta">
-                  <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
-                  <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-                  <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
-
-                  {/* Optional: Show question breakdown
-                {Object.keys(submission.questionScores).length > 0 && (
-                  <div style={{ marginTop: '10px' }}>
-                    <strong>Question Breakdown:</strong>
-                    <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
-                      {Object.entries(submission.questionScores).map(([questionId, score]) => (
-                        <div key={questionId}>Question {questionId}: {score} points</div>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      <ViewResults
+        assessments={assessments}
+        extractAllSubmissionsFromAssessments={extractAllSubmissionsFromAssessments}
+      />
     );
   };
 
