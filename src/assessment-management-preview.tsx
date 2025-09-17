@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { collection, addDoc, getDocs, updateDoc, doc, arrayUnion, deleteDoc, getDoc, query, where } from "firebase/firestore";
+import { getAuth, fetchSignInMethodsForEmail, sendPasswordResetEmail } from "firebase/auth";
 
 
 import { db } from "./firebaseConfig";
 import { useNavigate } from 'react-router-dom';
 
 const AssessmentManagementSystem = () => {
+    const auth = getAuth();
+
   // State management
   const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
   const navigate = useNavigate();
@@ -39,6 +42,13 @@ const AssessmentManagementSystem = () => {
   const [dbStudents, setDbStudents] = useState([]);
   const [studentSearchEmail, setStudentSearchEmail] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+    const [forgotStep, setForgotStep] = useState(1); // step 1: email, step 2: new password
+     const newPasswordRef = useRef(null);
+  const confirmPasswordRef = useRef(null);
+  const [forgotEmail, setForgotEmail] = useState(""); // store email after step 1
+
+
+
   // Fetch assessments from Firestore
   const fetchAssessments = useCallback(async () => {
     try {
@@ -1403,7 +1413,9 @@ const AssessmentManagementSystem = () => {
     // setShowAssessmentModal(true);
   };
 
-
+ const showForgotPassword = () => {
+    setCurrentView("forgot");
+  };
 
   // Date/Time utility functions
   const setSmartDefaults = () => {
@@ -1492,14 +1504,7 @@ const AssessmentManagementSystem = () => {
       </div>
 
       <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-        {/* <div className="form-group">
-          <label htmlFor="userRole">Select Role:</label>
-          <select ref={userRoleRef} id="userRole">
-            <option value="">Choose your role</option>
-            <option value="admin">Administrator</option>
-            <option value="student">Student</option>
-          </select>
-        </div> */}
+        
 
         <div className="form-group">
           <label htmlFor="email">Email:</label>
@@ -1535,9 +1540,168 @@ const AssessmentManagementSystem = () => {
           </p>
 
         </div>
-
+  {/* Forgot Password link */}
+        <div style={{ textAlign: "right", marginBottom: "10px" }}>
+          <button
+            onClick={showForgotPassword}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#667eea",
+              textDecoration: "underline",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontFamily: "inherit",
+              padding: "0",
+            }}
+            onMouseOver={(e) => (e.target.style.color = "#5a6fd8")}
+            onMouseOut={(e) => (e.target.style.color = "#667eea")}
+          >
+            Forgot Password?
+          </button>
+        </div>
       </div>
 
+    </div>
+  );
+ const resetPassword = async() => {
+  console.log("Step2 Email:", forgotEmail); // ✅ use state, not ref
+    const newPass = newPasswordRef.current.value;
+    const confirmPass = confirmPasswordRef.current.value;
+
+    if (!newPass || !confirmPass) {
+      alert("Please fill in all fields");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    
+  try {
+    // 🔍 Find the student with this email
+    const studentQuery = query(
+      collection(db, "students"),
+      where("email", "==", forgotEmail.toLowerCase())
+    );
+
+    const querySnapshot = await getDocs(studentQuery);
+
+    if (querySnapshot.empty) {
+      alert("No account found with this email");
+      return;
+    }
+
+    // Get the first student document
+    const studentDoc = querySnapshot.docs[0];
+
+    // ✅ Update password field
+    await updateDoc(doc(db, "students", studentDoc.id), {
+      password: newPass
+    });
+
+    alert(`Password reset successful for ${forgotEmail}`);
+
+        setForgotStep(1);
+
+    setCurrentView("login"); // back to login
+     } catch (error) {
+    console.error("Error resetting password:", error);
+    alert("Failed to reset password. Try again.");
+  }
+  };
+
+   const handleForgotNext = async() => {
+    const email = emailRef.current.value;
+    if (!email) {
+      alert("Please enter your email");
+      return;
+    }
+   try {
+    // 🔍 Check if email exists in Firestore
+    const studentQuery = query(
+      collection(db, "students"),
+      where("email", "==", email.toLowerCase())
+    );
+
+    const querySnapshot = await getDocs(studentQuery);
+
+    if (querySnapshot.empty) {
+      alert("No account found with this email");
+      return;
+    }
+    console.log('step 1 email',email);
+    setForgotEmail(email);   // ✅ save to state
+
+    setForgotStep(2);
+     } catch (error) {
+    console.error("Error checking email:", error);
+    alert("Something went wrong. Try again.");
+  }
+  
+  };
+const renderForgotPassword = () => (
+    <div className="card">
+      <div className="header">
+        <h1>🔑 Reset Password</h1>
+        <p>
+          {forgotStep === 1
+            ? "Enter your email to continue"
+            : "Enter your new password"}
+        </p>
+      </div>
+
+      <div style={{ maxWidth: "400px", margin: "0 auto" }}>
+        {forgotStep === 1 && (
+          <>
+            <div className="form-group">
+              <label htmlFor="email">Email:</label>
+              <input ref={emailRef} type="text" id="email" placeholder="Enter your registered Email" />
+            </div>
+
+            <button className="btn" onClick={handleForgotNext} style={{ width: "100%" }}>
+              Next
+            </button>
+          </>
+        )}
+
+        {forgotStep === 2 && (
+          <>
+            <div className="form-group">
+              <label htmlFor="newPassword">New Password:</label>
+              <input ref={newPasswordRef} type="password" id="newPassword" placeholder="Enter new password" />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password:</label>
+              <input ref={confirmPasswordRef} type="password" id="confirmPassword" placeholder="Confirm new password" />
+            </div>
+
+            <button className="btn" onClick={resetPassword} style={{ width: "100%" }}>
+              Reset Password
+            </button>
+          </>
+        )}
+
+        <div style={{ marginTop: "15px", textAlign: "center" }}>
+          <button
+            onClick={() => setCurrentView("login")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#667eea",
+              textDecoration: "underline",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              fontFamily: "inherit",
+              padding: "0",
+            }}
+          >
+            ← Back to Login
+          </button>
+        </div>
+      </div>
     </div>
   );
   const showStudentRegistration = () => {
@@ -2898,53 +3062,7 @@ const AssessmentManagementSystem = () => {
     );
   };
 
-  // Render My Submissions
-  // const renderMySubmissions = () => {
-  //   const mySubmissions = submissions.filter(s => s.studentName === currentUser?.username);
-
-  //   return (
-  //     <div>
-  //       <h3>My Submissions</h3>
-
-  //       {mySubmissions.length === 0 ? (
-  //         <p>No submissions yet.</p>
-  //       ) : (
-  //         mySubmissions.map(submission => {
-  //           const assessment = assessments.find(a => a.id === submission.assessmentId);
-  //           if (!assessment) return null;
-
-  //           const status = submission.isDraft ? 'Draft' : 'Submitted';
-  //           const statusClass = submission.isDraft ? 'status-pending' : 'status-open';
-
-  //           return (
-  //             <div key={submission.id} className="question-card">
-  //               <div className="question-header">
-  //                 <h4>📋 {assessment.title}</h4>
-  //                 <span className={`status-badge ${statusClass}`}>{status}</span>
-  //               </div>
-  //               <div className="question-meta">
-  //                 <strong>Last Modified:</strong> {new Date(submission.lastModified || submission.submittedAt).toLocaleString()}<br />
-  //                 <strong>Status:</strong> {submission.graded ? 'Graded' : 'Pending Review'}
-  //                 {submission.score !== undefined && <><br /><strong>Score:</strong> {submission.score} / {assessment.maxScore}</>}
-  //               </div>
-  //               <div style={{ marginTop: '15px' }}>
-  //                 <button className="btn btn-secondary" onClick={() => viewMyAnswers(submission.id)}>
-  //                   👁️ View My Answers
-  //                 </button>
-  //                 {submission.isDraft && (
-  //                   <button className="btn btn-warning" onClick={() => takeAssessment(assessment.firebaseId,assessment.id)}>
-  //                     📝 Continue Editing
-  //                   </button>
-  //                 )}
-  //               </div>
-  //             </div>
-  //           );
-  //         })
-  //       )}
-  //     </div>
-  //   );
-  // };
-
+  
   // Render Student Results Tab
   const renderStudentResults = () => {
     // Use the same data extraction method as other functions
@@ -4431,8 +4549,13 @@ const AssessmentManagementSystem = () => {
           }
         `}
       </style>
+
+
+
       <div style={{ padding: '20px' }}>
         {currentView === 'login' && renderLogin()}
+        {currentView === "forgot" && renderForgotPassword()}
+
         {currentView === 'admin' && renderAdminDashboard()}
         {currentView === 'student' && renderStudentDashboard()}
         {renderAssessmentModal()}
