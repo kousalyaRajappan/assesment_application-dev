@@ -2363,11 +2363,8 @@ Available points for this question: ${availablePoints} points`);
   );
 
   // Render Grade Submissions Tab
- const renderGradeSubmissions = () => {
+const renderGradeSubmissions = () => {
     const allSubmissions = extractAllSubmissionsFromAssessments();
-    
-    // Get unique student list
-    const uniqueStudents = [...new Set(allSubmissions.map(s => s.studentId))];
     
     // Filter submissions based on selected assessment AND student
     const filteredSubmissions = allSubmissions.filter(s => {
@@ -2409,11 +2406,12 @@ Available points for this question: ${availablePoints} points`);
               }}
             >
               <option value="all">All Students</option>
-              {uniqueStudents.map(studentId => {
-                const studentName = allSubmissions.find(s => s.studentId === studentId)?.studentName || studentId;
+              {dbStudents.map(student => {
+                // Try different possible field names for the student name
+                const studentName = student.name || student.fullName || student.displayName || student.firstName || student.studentName || student.email;
                 return (
-                  <option key={studentId} value={studentId}>
-                    {studentName}
+                  <option key={student.email || student.id} value={student.email}>
+                    {studentName === student.email ? student.email : `${studentName} (${student.email})`}
                   </option>
                 );
               })}
@@ -2421,6 +2419,7 @@ Available points for this question: ${availablePoints} points`);
           </div>
         </div>
 
+        {/* Rest of your code remains the same... */}
         {/* Summary Statistics - change to filteredSubmissions */}
         {filteredSubmissions.length > 0 && (
           <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
@@ -2529,7 +2528,6 @@ Available points for this question: ${availablePoints} points`);
       </div>
     );
   };
-
   // Render View Results Tab
   // Render View Results Tab
   const renderViewResults = () => {
