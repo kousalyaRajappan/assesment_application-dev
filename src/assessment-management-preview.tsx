@@ -7,7 +7,7 @@ import { db } from "./firebaseConfig";
 import { useNavigate } from 'react-router-dom';
 
 const AssessmentManagementSystem = () => {
-    const auth = getAuth();
+  const auth = getAuth();
 
   // State management
   const [currentUser, setCurrentUser] = useState(""); // "admin" or "student"
@@ -42,11 +42,15 @@ const AssessmentManagementSystem = () => {
   const [dbStudents, setDbStudents] = useState([]);
   const [studentSearchEmail, setStudentSearchEmail] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-    const [forgotStep, setForgotStep] = useState(1); // step 1: email, step 2: new password
-     const newPasswordRef = useRef(null);
+  const [forgotStep, setForgotStep] = useState(1); // step 1: email, step 2: new password
+  const newPasswordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
   const [forgotEmail, setForgotEmail] = useState(""); // store email after step 1
-
+const fileInputRef = useRef(null);
+const [isReplacing, setIsReplacing] = useState(false);
+const [originalAnswer, setOriginalAnswer] = useState(null);
+const [replacingStates, setReplacingStates] = useState({});
+const [originalAnswers, setOriginalAnswers] = useState({});
 
 
   // Fetch assessments from Firestore
@@ -951,7 +955,7 @@ const AssessmentManagementSystem = () => {
     }
 
     console.log("Pre-filled answers object:", prefilledAnswers);
-  setSelectedSubmission(null);
+    setSelectedSubmission(null);
 
     // Set the assessment state
     setCurrentAssessmentId(assessmentFirebaseId);
@@ -1028,7 +1032,7 @@ const AssessmentManagementSystem = () => {
           const answer = assessmentAnswers[fieldName];
 
           if (answer) {
-            if (type === 'file') {
+            if (type === 'file' || type === 'code') {
               // Handle file data (already converted to base64)
               if (typeof answer === 'object' && answer.base64) {
                 questionAnswers[type] = answer; // Store complete file object
@@ -1175,52 +1179,8 @@ const AssessmentManagementSystem = () => {
     }
   };
 
-  const renderFileAnswer = (fileData, label) => {
-    if (!fileData || typeof fileData !== 'object' || !fileData.base64) {
-      return `<p><strong>${label}:</strong> <em>No file uploaded</em></p>`;
-    }
 
-    const isImage = fileData.type.startsWith('image/');
 
-    return `
-    <div style="margin-bottom: 15px;">
-      <p><strong>${label.toUpperCase()}:</strong></p>
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
-        <div style="margin-bottom: 10px;">
-          <strong>📎 ${fileData.name}</strong><br>
-          <small style="color: #666;">
-            Size: ${(fileData.size / 1024).toFixed(1)}KB | 
-            Type: ${fileData.type} | 
-            Uploaded: ${new Date(fileData.uploadedAt).toLocaleString()}
-          </small>
-        </div>
-        ${isImage ? `
-          <div style="margin-top: 10px;">
-            <img src="${fileData.base64}" 
-                 alt="${fileData.name}" 
-                 style="max-width: 300px; max-height: 200px; border-radius: 4px; border: 1px solid #ddd;" />
-          </div>
-        ` : `
-          <div style="margin-top: 10px; padding: 8px; background: #e3f2fd; border-radius: 4px;">
-            <small>📄 File ready for download/viewing</small>
-          </div>
-        `}
-      </div>
-    </div>
-  `;
-  };
-
-  // Helper function to download file from base64
-  const downloadFileFromBase64 = (fileData, filename) => {
-    if (!fileData || !fileData.base64) return;
-
-    const link = document.createElement('a');
-    link.href = fileData.base64;
-    link.download = filename || fileData.name || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const closeAssessmentModal = () => {
     setShowAssessmentModal(false);
@@ -1272,9 +1232,9 @@ const AssessmentManagementSystem = () => {
       };
 
 
- setCurrentAssessmentId(assessment.firebaseId);  // Firebase ID
-    setFileId(assessment.id);                       // Custom ID
-    setSelectedSubmission(submissionData);
+      setCurrentAssessmentId(assessment.firebaseId);  // Firebase ID
+      setFileId(assessment.id);                       // Custom ID
+      setSelectedSubmission(submissionData);
       setShowAssessmentModal(true);
 
 
@@ -1315,10 +1275,10 @@ const AssessmentManagementSystem = () => {
 
       console.log('Formatted submission:', formattedSubmission);
 
-  setCurrentAssessmentId(assessment.firebaseId);  // Firebase ID  
-    setFileId(assessment.id);                       // Custom ID
-    setSelectedSubmission(formattedSubmission);
-          setShowAssessmentModal(true);
+      setCurrentAssessmentId(assessment.firebaseId);  // Firebase ID  
+      setFileId(assessment.id);                       // Custom ID
+      setSelectedSubmission(formattedSubmission);
+      setShowAssessmentModal(true);
 
     } catch (error) {
       console.error('Error in alternative viewMyAnswers:', error);
@@ -1347,63 +1307,63 @@ const AssessmentManagementSystem = () => {
       return;
     }
     // Calculate performance statistics
-  let totalEarned = 0;
-  let totalPossible = 0;
-  let questionsCorrect = 0;
+    let totalEarned = 0;
+    let totalPossible = 0;
+    let questionsCorrect = 0;
 
-  // Get grades from the submission data (check both possible locations)
-  const grades = submission.questionScores || submission.scores || {};
-  console.log("Grades found:", grades);
+    // Get grades from the submission data (check both possible locations)
+    const grades = submission.questionScores || submission.scores || {};
+    console.log("Grades found:", grades);
 
-  // Calculate stats for each question
-  assessment.questions.forEach(question => {
-    const questionGrade = grades[question.id] || 0;
-    const maxPoints = question.points || 0;
-    
-    totalEarned += questionGrade;
-    totalPossible += maxPoints;
-    
-    // Count perfect scores
-    if (questionGrade === maxPoints && maxPoints > 0) {
-      questionsCorrect++;
-    }
+    // Calculate stats for each question
+    assessment.questions.forEach(question => {
+      const questionGrade = grades[question.id] || 0;
+      const maxPoints = question.points || 0;
 
-    console.log(`Question ${question.id}: ${questionGrade}/${maxPoints} points`);
-  });
+      totalEarned += questionGrade;
+      totalPossible += maxPoints;
 
-  const percentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(1) : 0;
+      // Count perfect scores
+      if (questionGrade === maxPoints && maxPoints > 0) {
+        questionsCorrect++;
+      }
 
-  console.log("Calculated performance stats:", {
-    totalEarned,
-    totalPossible, 
-    questionsCorrect,
-    percentage
-  });
+      console.log(`Question ${question.id}: ${questionGrade}/${maxPoints} points`);
+    });
 
-  // Create enhanced submission object with statistics
-  const enhancedSubmission = {
-    ...submission,
-    assessment: assessment,
-    showDetailedResults: true,
-    performanceStats: {
-      percentage: percentage,
-      questionsCorrect: questionsCorrect,
-      totalQuestions: assessment.questions.length,
-      totalEarned: totalEarned,
-      totalPossible: totalPossible
-    }
-  };
+    const percentage = totalPossible > 0 ? ((totalEarned / totalPossible) * 100).toFixed(1) : 0;
 
-  console.log("Enhanced submission with performance stats:", enhancedSubmission);
+    console.log("Calculated performance stats:", {
+      totalEarned,
+      totalPossible,
+      questionsCorrect,
+      percentage
+    });
 
-  // Set the enhanced submission
-  setSelectedSubmission(enhancedSubmission);
+    // Create enhanced submission object with statistics
+    const enhancedSubmission = {
+      ...submission,
+      assessment: assessment,
+      showDetailedResults: true,
+      performanceStats: {
+        percentage: percentage,
+        questionsCorrect: questionsCorrect,
+        totalQuestions: assessment.questions.length,
+        totalEarned: totalEarned,
+        totalPossible: totalPossible
+      }
+    };
 
-  // Set IDs for modal (important for modal to work)
-  setCurrentAssessmentId(assessment.firebaseId);
-  setFileId(assessment.id);
-  
-  setShowAssessmentModal(true);
+    console.log("Enhanced submission with performance stats:", enhancedSubmission);
+
+    // Set the enhanced submission
+    setSelectedSubmission(enhancedSubmission);
+
+    // Set IDs for modal (important for modal to work)
+    setCurrentAssessmentId(assessment.firebaseId);
+    setFileId(assessment.id);
+
+    setShowAssessmentModal(true);
 
     // setSelectedSubmission({
     //   ...submission,
@@ -1413,7 +1373,7 @@ const AssessmentManagementSystem = () => {
     // setShowAssessmentModal(true);
   };
 
- const showForgotPassword = () => {
+  const showForgotPassword = () => {
     setCurrentView("forgot");
   };
 
@@ -1504,7 +1464,7 @@ const AssessmentManagementSystem = () => {
       </div>
 
       <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-        
+
 
         <div className="form-group">
           <label htmlFor="email">Email:</label>
@@ -1540,7 +1500,7 @@ const AssessmentManagementSystem = () => {
           </p>
 
         </div>
-  {/* Forgot Password link */}
+        {/* Forgot Password link */}
         <div style={{ textAlign: "right", marginBottom: "10px" }}>
           <button
             onClick={showForgotPassword}
@@ -1564,8 +1524,8 @@ const AssessmentManagementSystem = () => {
 
     </div>
   );
- const resetPassword = async() => {
-  console.log("Step2 Email:", forgotEmail); // ✅ use state, not ref
+  const resetPassword = async () => {
+    console.log("Step2 Email:", forgotEmail); // ✅ use state, not ref
     const newPass = newPasswordRef.current.value;
     const confirmPass = confirmPasswordRef.current.value;
 
@@ -1578,70 +1538,70 @@ const AssessmentManagementSystem = () => {
       return;
     }
 
-    
-  try {
-    // 🔍 Find the student with this email
-    const studentQuery = query(
-      collection(db, "students"),
-      where("email", "==", forgotEmail.toLowerCase())
-    );
 
-    const querySnapshot = await getDocs(studentQuery);
+    try {
+      // 🔍 Find the student with this email
+      const studentQuery = query(
+        collection(db, "students"),
+        where("email", "==", forgotEmail.toLowerCase())
+      );
 
-    if (querySnapshot.empty) {
-      alert("No account found with this email");
-      return;
+      const querySnapshot = await getDocs(studentQuery);
+
+      if (querySnapshot.empty) {
+        alert("No account found with this email");
+        return;
+      }
+
+      // Get the first student document
+      const studentDoc = querySnapshot.docs[0];
+
+      // ✅ Update password field
+      await updateDoc(doc(db, "students", studentDoc.id), {
+        password: newPass
+      });
+
+      alert(`Password reset successful for ${forgotEmail}`);
+
+      setForgotStep(1);
+
+      setCurrentView("login"); // back to login
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      alert("Failed to reset password. Try again.");
     }
-
-    // Get the first student document
-    const studentDoc = querySnapshot.docs[0];
-
-    // ✅ Update password field
-    await updateDoc(doc(db, "students", studentDoc.id), {
-      password: newPass
-    });
-
-    alert(`Password reset successful for ${forgotEmail}`);
-
-        setForgotStep(1);
-
-    setCurrentView("login"); // back to login
-     } catch (error) {
-    console.error("Error resetting password:", error);
-    alert("Failed to reset password. Try again.");
-  }
   };
 
-   const handleForgotNext = async() => {
+  const handleForgotNext = async () => {
     const email = emailRef.current.value;
     if (!email) {
       alert("Please enter your email");
       return;
     }
-   try {
-    // 🔍 Check if email exists in Firestore
-    const studentQuery = query(
-      collection(db, "students"),
-      where("email", "==", email.toLowerCase())
-    );
+    try {
+      // 🔍 Check if email exists in Firestore
+      const studentQuery = query(
+        collection(db, "students"),
+        where("email", "==", email.toLowerCase())
+      );
 
-    const querySnapshot = await getDocs(studentQuery);
+      const querySnapshot = await getDocs(studentQuery);
 
-    if (querySnapshot.empty) {
-      alert("No account found with this email");
-      return;
+      if (querySnapshot.empty) {
+        alert("No account found with this email");
+        return;
+      }
+      console.log('step 1 email', email);
+      setForgotEmail(email);   // ✅ save to state
+
+      setForgotStep(2);
+    } catch (error) {
+      console.error("Error checking email:", error);
+      alert("Something went wrong. Try again.");
     }
-    console.log('step 1 email',email);
-    setForgotEmail(email);   // ✅ save to state
 
-    setForgotStep(2);
-     } catch (error) {
-    console.error("Error checking email:", error);
-    alert("Something went wrong. Try again.");
-  }
-  
   };
-const renderForgotPassword = () => (
+  const renderForgotPassword = () => (
     <div className="card">
       <div className="header">
         <h1>🔑 Reset Password</h1>
@@ -2409,13 +2369,13 @@ const renderForgotPassword = () => (
                         }}>
                           ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
                         </div>
-                        <button
+                        {/* <button
                           className="btn btn-secondary"
                           onClick={() => gradeSubmission(submission.id)}
                           style={{ fontSize: '12px', padding: '6px 12px' }}
                         >
                           Edit Grade
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </div>
@@ -2555,19 +2515,28 @@ const renderForgotPassword = () => (
             const currentStudentEmail = currentUser.email;
             const sanitizedEmail = currentStudentEmail.replace('@', '_').replace(/\./g, '_');
 
-            const currentStudentSubmission = assessment.submissions && assessment.submissions[sanitizedEmail];
-            const hasSubmitted = currentStudentSubmission && currentStudentSubmission.questions;
+            const currentStudentSubmission = assessment.submissions?.[sanitizedEmail];
 
-            // Check if student completed ALL questions
-            const totalQuestions = assessment.questions ? assessment.questions.length : 0;
-            const questionsAnswered = hasSubmitted ? Object.keys(currentStudentSubmission.questions).length : 0;
-            const isCompleted = hasSubmitted && (questionsAnswered === totalQuestions);
+            // const currentStudentSubmission = assessment.submissions && assessment.submissions[sanitizedEmail];
+            const hasSubmitted = !!currentStudentSubmission;
 
-            // Check if assessment is graded
-            const gradesKey = `GRADES_${sanitizedEmail}`;
-            const isGraded = assessment.submissions && assessment.submissions[gradesKey];
-            const gradeData = isGraded ? assessment.submissions[gradesKey] : null;
 
+            const totalQuestions = assessment.questions
+              ? Object.keys(assessment.questions).length
+              : 0;
+
+            // Questions answered
+            const questionsAnswered = hasSubmitted
+              ? Object.keys(currentStudentSubmission.questions || {}).length
+              : 0;
+
+            const isCompleted = hasSubmitted && questionsAnswered === totalQuestions;
+
+            const isGraded = currentStudentSubmission?.graded === true;
+            const gradeData = isGraded ? currentStudentSubmission : null;
+
+
+            console.log("graded completed or not", isGraded);
             if (now >= start && now <= end) {
               status = 'Active';
               statusClass = 'status-open';
@@ -2726,54 +2695,6 @@ const renderForgotPassword = () => (
       </div>
     );
   };
-  // Helper function to check if student completed an assessment
-  const hasStudentCompletedAssessment = (assessment, studentEmail) => {
-    if (!assessment.submissions || !studentEmail) return false;
-
-    const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
-    const studentSubmission = assessment.submissions[sanitizedEmail];
-
-    if (!studentSubmission || !studentSubmission.questions) return false;
-
-    const totalQuestions = assessment.questions ? assessment.questions.length : 0;
-    const questionsAnswered = Object.keys(studentSubmission.questions).length;
-
-    return questionsAnswered === totalQuestions;
-  };
-
-  // Helper function to get student's assessment progress
-  const getStudentAssessmentProgress = (assessment, studentEmail) => {
-    if (!assessment.submissions || !studentEmail) return null;
-
-    const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
-    const studentSubmission = assessment.submissions[sanitizedEmail];
-
-    if (!studentSubmission) return null;
-
-    const totalQuestions = assessment.questions ? assessment.questions.length : 0;
-    const questionsAnswered = studentSubmission.questions ? Object.keys(studentSubmission.questions).length : 0;
-
-    const gradesKey = `GRADES_${sanitizedEmail}`;
-    const gradeData = assessment.submissions[gradesKey];
-
-    return {
-      submitted: true,
-      questionsAnswered: questionsAnswered,
-      totalQuestions: totalQuestions,
-      isCompleted: questionsAnswered === totalQuestions,
-      isGraded: !!gradeData,
-      gradeData: gradeData,
-      submittedAt: studentSubmission.submittedAt,
-      submissionData: studentSubmission
-    };
-  };
-  const renderFileInfo = (fileData) => {
-    if (!fileData || typeof fileData !== 'object' || !fileData.base64) {
-      return 'No file uploaded';
-    }
-
-    return `${fileData.name} (${(fileData.size / 1024).toFixed(1)}KB)`;
-  };
 
   // Helper function to count answers including files
   const countAnswers = (answers) => {
@@ -2909,36 +2830,7 @@ const renderForgotPassword = () => (
     return mySubmissions;
   };
 
-  // Helper function to get grade for specific question
-  const getQuestionGrade = (assessment, studentEmail, questionId) => {
-    const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
-    const studentSubmission = assessment.submissions?.[sanitizedEmail];
 
-    if (studentSubmission && studentSubmission.questions && studentSubmission.questions[questionId]) {
-      return studentSubmission.questions[questionId].grade;
-    }
-
-    return null;
-  };
-
-  // Helper function to get all grades for a student
-  const getAllGradesForStudent = (assessment, studentEmail) => {
-    const sanitizedEmail = studentEmail.replace('@', '_').replace(/\./g, '_');
-    const studentSubmission = assessment.submissions?.[sanitizedEmail];
-
-    if (!studentSubmission || !studentSubmission.questions) {
-      return {};
-    }
-
-    const grades = {};
-    Object.entries(studentSubmission.questions).forEach(([questionId, questionData]) => {
-      if (questionData.grade !== undefined) {
-        grades[questionId] = questionData.grade;
-      }
-    });
-
-    return grades;
-  };
 
   const renderMySubmissions = () => {
     const mySubmissions = extractSubmissionsFromAssessments();
@@ -3062,7 +2954,7 @@ const renderForgotPassword = () => (
     );
   };
 
-  
+
   // Render Student Results Tab
   const renderStudentResults = () => {
     // Use the same data extraction method as other functions
@@ -3296,391 +3188,606 @@ const renderForgotPassword = () => (
     );
   };
   // Render Assessment Taking Modal
- const renderAssessmentModal = () => {
-  if (!showAssessmentModal) return null;
+  const renderAssessmentModal = () => {
+    if (!showAssessmentModal) return null;
 
-  if (!currentAssessmentId) return null;
+    if (!currentAssessmentId) return null;
 
-  const assessment = assessments.find(a => a.id === fileId);
-  if (!assessment) return null;
+    const assessment = assessments.find(a => a.id === fileId);
+    if (!assessment) return null;
 
-  // Current student info
-  const currentStudentEmail = currentUser?.email;
-  const sanitizedEmail = currentStudentEmail?.replace('@', '_').replace(/\./g, '_');
+    // Current student info
+    const currentStudentEmail = currentUser?.email;
+    const sanitizedEmail = currentStudentEmail?.replace('@', '_').replace(/\./g, '_');
 
-  // Submissions & grades
-  const submissionData = assessment.submissions && assessment.submissions[sanitizedEmail];
-  const gradesKey = `GRADES_${sanitizedEmail}`;
-  const gradeData = assessment.submissions && assessment.submissions[gradesKey];
+    // Submissions & grades
+    const submissionData = assessment.submissions && assessment.submissions[sanitizedEmail];
+    const gradesKey = `GRADES_${sanitizedEmail}`;
+    const gradeData = assessment.submissions && assessment.submissions[gradesKey];
 
-  // Check if we're viewing detailed results
-  const isDetailedResults = selectedSubmission?.showDetailedResults;
+    // Check if we're viewing detailed results
+    const isDetailedResults = selectedSubmission?.showDetailedResults;
 
-  // Helper: get grade per question
-  const getQuestionGrade = (questionId) => {
-    // First check selectedSubmission for detailed results
-    if (selectedSubmission?.questionScores?.[questionId] !== undefined) {
-      return selectedSubmission.questionScores[questionId];
-    }
-    if (selectedSubmission?.scores?.[questionId] !== undefined) {
-      return selectedSubmission.scores[questionId];
-    }
-    
-    // Then check other sources
-    if (gradeData?.questionGrades?.[questionId] !== undefined) {
-      return gradeData.questionGrades[questionId];
-    }
-    if (submissionData?.questions?.[questionId]?.grade !== undefined) {
-      return submissionData.questions[questionId].grade;
-    }
-    
-    return null;
-  };
+    // Helper: get grade per question
+    const getQuestionGrade = (questionId) => {
+      // First check selectedSubmission for detailed results
+      if (selectedSubmission?.questionScores?.[questionId] !== undefined) {
+        return selectedSubmission.questionScores[questionId];
+      }
+      if (selectedSubmission?.scores?.[questionId] !== undefined) {
+        return selectedSubmission.scores[questionId];
+      }
 
-  // Helper: get student answer for specific question and type
-  const getStudentAnswer = (questionId, answerType) => {
-    // Priority 1: Check selectedSubmission (for detailed results view)
-    if (selectedSubmission?.answers?.[questionId]?.answers?.[answerType]) {
-      return selectedSubmission.answers[questionId].answers[answerType];
-    }
-    
-    // Priority 2: Check current assessmentAnswers (for active editing)
-    const fieldKey = `${questionId}_${answerType}`;
-    if (assessmentAnswers[fieldKey]) {
-      return assessmentAnswers[fieldKey];
-    }
-    
-    // Priority 3: Check submissionData (for viewing submitted answers)
-    if (submissionData?.questions?.[questionId]?.answers?.[answerType]) {
-      return submissionData.questions[questionId].answers[answerType];
-    }
-    
-    // Priority 4: Check legacy answer format
-    if (submissionData?.questions?.[questionId]?.answer) {
-      return submissionData.questions[questionId].answer;
-    }
-    
-    return "";
-  };
+      // Then check other sources
+      if (gradeData?.questionGrades?.[questionId] !== undefined) {
+        return gradeData.questionGrades[questionId];
+      }
+      if (submissionData?.questions?.[questionId]?.grade !== undefined) {
+        return submissionData.questions[questionId].grade;
+      }
 
-  const isGraded = gradeData || submissionData?.graded || selectedSubmission?.graded;
-  const isViewOnly = !!submissionData || !!selectedSubmission; // already submitted → read-only
+      return null;
+    };
 
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
-      alignItems: 'center', justifyContent: 'center'
-    }}>
+    // Helper: get student answer for specific question and type
+    const getStudentAnswer = (questionId, answerType) => {
+      // Priority 1: Check selectedSubmission (for detailed results view)
+      if (selectedSubmission?.answers?.[questionId]?.answers?.[answerType]) {
+        return selectedSubmission.answers[questionId].answers[answerType];
+      }
+
+      // Priority 2: Check current assessmentAnswers (for active editing)
+      const fieldKey = `${questionId}_${answerType}`;
+if (fieldKey in assessmentAnswers) {
+    return assessmentAnswers[fieldKey]; // This could be null, which is intentional
+  }
+
+      // if (assessmentAnswers[fieldKey]) {
+      //   return assessmentAnswers[fieldKey];
+      // }
+
+      // Priority 3: Check submissionData (for viewing submitted answers)
+      if (submissionData?.questions?.[questionId]?.answers?.[answerType]) {
+        return submissionData.questions[questionId].answers[answerType];
+      }
+
+      // Priority 4: Check legacy answer format
+      if (submissionData?.questions?.[questionId]?.answer) {
+        return submissionData.questions[questionId].answer;
+      }
+
+      return "";
+    };
+
+    const isGraded = gradeData || submissionData?.graded || selectedSubmission?.graded;
+    const isViewOnly = !!submissionData || !!selectedSubmission; // already submitted → read-only
+
+    return (
       <div style={{
-        background: 'white', padding: '30px', borderRadius: '15px',
-        width: '95%', maxWidth: '900px', maxHeight: '90%', overflowY: 'auto'
+        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+        background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex',
+        alignItems: 'center', justifyContent: 'center'
       }}>
-        <div className="header">
-          <h2>📝 {assessment.title}</h2>
-          
-          <button className="btn btn-secondary" onClick={closeAssessmentModal} style={{ float: 'right' }}>
-            Close
-          </button>
-        </div>
-        <p>{assessment.description}</p>
+        <div style={{
+          background: 'white', padding: '30px', borderRadius: '15px',
+          width: '95%', maxWidth: '900px', maxHeight: '90%', overflowY: 'auto'
+        }}>
+          <div className="header">
+            <h2>📝 {assessment.title}</h2>
 
-       
-
-        {/* Regular assessment info for non-detailed results */}
-        {!isDetailedResults && (
-          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
-            <strong>⏰ Time Remaining:</strong> <span id="timeRemaining"></span><br />
-            <strong>🎯 Total Points:</strong> {assessment.maxScore}
-            {gradeData?.totalScore !== undefined && (
-              <>
-                <br />
-                <strong>📊 Your Score:</strong> {gradeData.totalScore}/{assessment.maxScore} (
-                {((gradeData.totalScore / assessment.maxScore) * 100).toFixed(1)}%
-                )
-              </>
-            )}
-          </div>
-        )}
-
-        <div>
-          {assessment.questions?.map((question, index) => {
-            const questionGrade = getQuestionGrade(question.id);
-            const maxScore = question.points || question.maxScore || 0;
-            const hasGrade = questionGrade !== null && questionGrade !== undefined;
-
-            return (
-              <div key={question.id} className="question-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4>❓ Question {index + 1} ({question.points} points)</h4>
-                  {hasGrade && (
-                    <div style={{
-                      padding: '5px 12px',
-                      borderRadius: '15px',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      color: 'white',
-                      backgroundColor: questionGrade === maxScore ? '#28a745' :
-                        questionGrade > 0 ? '#ffc107' : '#dc3545'
-                    }}>
-                      Grade: {questionGrade}/{maxScore}
-                    </div>
-                  )}
-                  {!hasGrade && isGraded && (
-                    <div style={{
-                      padding: '5px 12px',
-                      borderRadius: '15px',
-                      fontSize: '14px',
-                      backgroundColor: '#6c757d',
-                      color: 'white'
-                    }}>
-                      Not Graded
-                    </div>
-                  )}
-                </div>
-
-                <p>{question.text}</p>
-                {question.instructions && <p><em>Instructions: {question.instructions}</em></p>}
-
-                {question.types?.map(type => {
-                  const studentAnswer = getStudentAnswer(question.id, type);
-                  const fieldKey = `${question.id}_${type}`;
-
-                  return (
-                    <div key={type} className="answer-input-group">
-                      <h5>{type.charAt(0).toUpperCase() + type.slice(1)} Answer:</h5>
-
-                      {type === 'file' ? (
-                        isViewOnly ? (
-                          // Display submitted file
-                          studentAnswer ? (
-                            typeof studentAnswer === 'object' && studentAnswer.base64 ? (
-                              // New file format with base64
-                              <div style={{
-                                background: '#f8f9fa',
-                                padding: '15px',
-                                borderRadius: '8px',
-                                border: '1px solid #dee2e6'
-                              }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                  <div>
-                                    <strong>📎 {studentAnswer.name}</strong><br />
-                                    <small style={{ color: '#6c757d' }}>
-                                      {(studentAnswer.size / 1024).toFixed(1)}KB • {studentAnswer.type}
-                                    </small>
-                                  </div>
-                                  <button
-                                    className="btn btn-secondary"
-                                    style={{ fontSize: '12px', padding: '4px 8px' }}
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = studentAnswer.base64;
-                                      link.download = studentAnswer.name;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    }}
-                                  >
-                                    ⬇️ Download
-                                  </button>
-                                </div>
-                                {studentAnswer.type.startsWith('image/') && (
-                                  <img
-                                    src={studentAnswer.base64}
-                                    alt={studentAnswer.name}
-                                    style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
-                                  />
-                                )}
-                              </div>
-                            ) : (
-                              // Legacy file format (just text)
-                              <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px' }}>
-                                📎 {studentAnswer}
-                              </div>
-                            )
-                          ) : (
-                            <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', color: '#666', fontStyle: 'italic' }}>
-                              No file uploaded
-                            </div>
-                          )
-                        ) : (
-                          // Allow file upload for active assessment
-                          <FileUploadWithBase64
-                            onFileConverted={(fileData) => handleAnswerChange(fieldKey, fileData)}
-                            currentValue={assessmentAnswers[fieldKey]}
-                            maxSize={5 * 1024 * 1024}
-                          />
-                        )
-                      ) : type === 'text' || type === 'code' ? (
-                        isViewOnly ? (
-                          // Display submitted text/code
-                          <div style={{ 
-                            background: '#f8f9fa', 
-                            padding: '12px', 
-                            borderRadius: '6px',
-                            whiteSpace: 'pre-wrap',
-                            fontFamily: type === 'code' ? 'monospace' : 'inherit',
-                            fontSize: type === 'code' ? '13px' : '14px',
-                            border: '1px solid #e0e0e0'
-                          }}>
-                            {studentAnswer || "No answer submitted"}
-                          </div>
-                        ) : (
-                          // Allow text/code input for active assessment
-                          <textarea
-                            rows="4"
-                            placeholder="Enter your answer here..."
-                            style={{ 
-                              fontFamily: type === 'code' ? 'monospace' : 'inherit',
-                              fontSize: type === 'code' ? '13px' : '14px'
-                            }}
-                            value={assessmentAnswers[fieldKey] || ''}
-                            onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
-                          />
-                        )
-                      ) : type === 'url' ? (
-                        isViewOnly ? (
-                          // Display submitted URL
-                          studentAnswer ? (
-                            <div>
-                              <a href={studentAnswer} target="_blank" rel="noreferrer" style={{ color: '#007bff', textDecoration: 'underline' }}>
-                                {studentAnswer}
-                              </a>
-                              <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                                Click to open in new tab
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ color: '#666', fontStyle: 'italic' }}>No URL submitted</div>
-                          )
-                        ) : (
-                          // Allow URL input for active assessment
-                          <input
-                            type="url"
-                            placeholder="https://github.com/username/repository"
-                            value={assessmentAnswers[fieldKey] || ''}
-                            onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
-                          />
-                        )
-                      ) : (
-                        isViewOnly ? (
-                          // Display other answer types
-                          <div style={{ 
-                            background: '#f8f9fa', 
-                            padding: '10px', 
-                            borderRadius: '6px',
-                            border: '1px solid #e0e0e0'
-                          }}>
-                            {studentAnswer || "No answer submitted"}
-                          </div>
-                        ) : (
-                          // Allow other input types for active assessment
-                          <input
-                            type="text"
-                            placeholder="Enter your answer"
-                            value={assessmentAnswers[fieldKey] || ''}
-                            onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
-                          />
-                        )
-                      )}
-
-                     
-                    </div>
-                  );
-                })}
-
-                {/* Individual Question Performance for Detailed Results */}
-                {isDetailedResults && hasGrade && (
-                  <div style={{
-                    background: questionGrade === maxScore ? '#d4edda' : 
-                              questionGrade > 0 ? '#fff3cd' : '#f8d7da',
-                    border: `1px solid ${questionGrade === maxScore ? '#c3e6cb' : 
-                                       questionGrade > 0 ? '#ffeaa7' : '#f5c6cb'}`,
-                    borderRadius: '8px',
-                    padding: '12px',
-                    marginTop: '10px'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong>Your Score: {questionGrade}/{maxScore} points</strong>
-                        {maxScore > 0 && (
-                          <span style={{ marginLeft: '10px', fontSize: '14px' }}>
-                            ({((questionGrade / maxScore) * 100).toFixed(1)}%)
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: '20px' }}>
-                        {questionGrade === maxScore ? '✅' : questionGrade > 0 ? '🔶' : '❌'}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Show submit button only if NOT already submitted and not in detailed results */}
-        {!isViewOnly && !isDetailedResults && (
-          <div style={{ textAlign: 'center', marginTop: '30px' }}>
-            <button
-              className="btn"
-              onClick={submitAssessmentWithAnswers}
-              style={{
-                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                fontSize: '18px', padding: '18px 35px', fontWeight: 'bold'
-              }}
-            >
-              🎯 SUBMIT ASSESSMENT
+            <button className="btn btn-secondary" onClick={closeAssessmentModal} style={{ float: 'right' }}>
+              Close
             </button>
           </div>
+          <p>{assessment.description}</p>
+
+
+
+          {/* Regular assessment info for non-detailed results */}
+          {!isDetailedResults && (
+            <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px', margin: '15px 0' }}>
+              <strong>⏰ Time Remaining:</strong> <span id="timeRemaining"></span><br />
+              <strong>🎯 Total Points:</strong> {assessment.maxScore}
+              {gradeData?.totalScore !== undefined && (
+                <>
+                  <br />
+                  <strong>📊 Your Score:</strong> {gradeData.totalScore}/{assessment.maxScore} (
+                  {((gradeData.totalScore / assessment.maxScore) * 100).toFixed(1)}%
+                  )
+                </>
+              )}
+            </div>
+          )}
+
+          <div>
+            {assessment.questions?.map((question, index) => {
+              const questionGrade = getQuestionGrade(question.id);
+              const maxScore = question.points || question.maxScore || 0;
+              const hasGrade = questionGrade !== null && questionGrade !== undefined;
+
+              return (
+                <div key={question.id} className="question-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4>❓ Question {index + 1} ({question.points} points)</h4>
+                    {hasGrade && (
+                      <div style={{
+                        padding: '5px 12px',
+                        borderRadius: '15px',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        color: 'white',
+                        backgroundColor: questionGrade === maxScore ? '#28a745' :
+                          questionGrade > 0 ? '#ffc107' : '#dc3545'
+                      }}>
+                        Grade: {questionGrade}/{maxScore}
+                      </div>
+                    )}
+                    {!hasGrade && isGraded && (
+                      <div style={{
+                        padding: '5px 12px',
+                        borderRadius: '15px',
+                        fontSize: '14px',
+                        backgroundColor: '#6c757d',
+                        color: 'white'
+                      }}>
+                        Not Graded
+                      </div>
+                    )}
+                  </div>
+
+                  <p>{question.text}</p>
+                  {question.instructions && <p><em>Instructions: {question.instructions}</em></p>}
+
+                  {question.types?.map(type => {
+                    const studentAnswer = getStudentAnswer(question.id, type);
+                    const fieldKey = `${question.id}_${type}`;
+                    return (
+                      <div key={type} className="answer-input-group">
+                        <h5>{type.charAt(0).toUpperCase() + type.slice(1)} Answer:</h5>
+
+                        {(type === 'file' || type === 'code') ? (
+
+                          isViewOnly ? (
+
+                            hasGrade ? (
+                              // Display submitted file
+                              studentAnswer ? (
+                                typeof studentAnswer === 'object' && studentAnswer.base64 ? (
+                                  // New file format with base64
+                                  <div style={{
+                                    background: '#f8f9fa',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #dee2e6'
+                                  }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                      <div>
+                                        <strong>📎 {studentAnswer.name}</strong><br />
+                                        <small style={{ color: '#6c757d' }}>
+                                          {(studentAnswer.size / 1024).toFixed(1)}KB • {studentAnswer.type}
+                                        </small>
+                                      </div>
+                                      <button
+                                        className="btn btn-secondary"
+                                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                                        onClick={() => {
+                                          const link = document.createElement('a');
+                                          link.href = studentAnswer.base64;
+                                          link.download = studentAnswer.name;
+                                          document.body.appendChild(link);
+                                          link.click();
+                                          document.body.removeChild(link);
+                                        }}
+                                      >
+                                        ⬇️ Download
+                                      </button>
+                                    </div>
+                                    {studentAnswer.type.startsWith('image/') && (
+                                      <img
+                                        src={studentAnswer.base64}
+                                        alt={studentAnswer.name}
+                                        style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
+                                      />
+                                    )}
+                                  </div>
+                                ) : (
+                                  // Legacy file format (just text)
+                                  <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px' }}>
+                                    📎 {studentAnswer}
+                                  </div>
+                                )
+                              ) : (
+                                <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', color: '#666', fontStyle: 'italic' }}>
+                                  No file uploaded
+                                </div>
+                              )
+                            ) : (
+
+                           <div>
+  {/* Show previous submitted answer if exists AND not in replacing mode */}
+  {studentAnswer && !replacingStates[fieldKey] ? (
+    typeof studentAnswer === 'object' && studentAnswer.base64 ? (
+      <div style={{
+        background: '#f8f9fa',
+        padding: '15px',
+        borderRadius: '8px',
+        border: '1px solid #dee2e6',
+        marginBottom: '10px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <div>
+            <strong>📎 {studentAnswer.name}</strong><br />
+            <small style={{ color: '#6c757d' }}>
+              {(studentAnswer.size / 1024).toFixed(1)}KB • {studentAnswer.type}
+            </small>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn btn-secondary"
+              style={{ fontSize: '12px', padding: '4px 8px' }}
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = studentAnswer.base64;
+                link.download = studentAnswer.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              ⬇️ Download
+            </button>
+
+            {/* Replace option */}
+            <button
+              className="btn btn-primary"
+              style={{ fontSize: '12px', padding: '4px 8px' }}
+              onClick={() => {
+                setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
+                setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
+                handleAnswerChange(fieldKey, null);
+              }}
+            >
+              🔄 Replace
+            </button>
+          </div>
+        </div>
+        {studentAnswer.type.startsWith('image/') && (
+          <img
+            src={studentAnswer.base64}
+            alt={studentAnswer.name}
+            style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
+          />
         )}
-
-        {isDetailedResults && selectedSubmission?.performanceStats && (
-          <div style={{ background: '#f8f9fa', padding: '25px', borderRadius: '8px', margin: '25px 0', border: '2px solid #667eea' }}>
-            <h4 style={{ textAlign: 'center', margin: '0 0 20px 0', color: '#667eea' }}>
-              📊 Final Performance Summary
-            </h4>
+      </div>
+    ) : (
+      // Handle string type studentAnswer
+      <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
+        📎 {studentAnswer}
+        <button
+          className="btn btn-primary"
+          style={{ fontSize: '12px', padding: '2px 6px', marginLeft: '10px' }}
+          onClick={() => {
+            setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
+            setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
+            handleAnswerChange(fieldKey, null);
+          }}
+        >
+          🔄 Replace
+        </button>
+      </div>
+    )
+  ) : (
+    // Show file upload component when no answer OR when replacing
+    <div>
+      {replacingStates[fieldKey] && (
+        <div style={{ marginBottom: '10px' }}>
+          {/* Show original file info when replacing */}
+          
+          
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setReplacingStates(prev => ({ ...prev, [fieldKey]: false }));
+              // Restore the original answer
+              handleAnswerChange(fieldKey, originalAnswers[fieldKey]);
+              setOriginalAnswers(prev => {
+                const newState = { ...prev };
+                delete newState[fieldKey];
+                return newState;
+              });
+            }}
+            style={{ marginBottom: '10px' }}
+          >
+            ← Cancel Replace
+          </button>
+        </div>
+      )}
+      
+      {/* File Upload Component */}
+      <FileUploadWithBase64
+        onFileConverted={(fileData) => {
+          handleAnswerChange(fieldKey, fileData);
+          // Don't reset replacing state immediately - let user see the preview first
+        }}
+        currentValue={assessmentAnswers[fieldKey]}
+        maxSize={5 * 1024 * 1024}
+      />
+      
+      {/* Preview of newly selected file */}
+      {assessmentAnswers[fieldKey] && typeof assessmentAnswers[fieldKey] === 'object' && assessmentAnswers[fieldKey].base64 && (
+        <div>
+         
+          
+         
+          
+          {/* Preview for text-based files */}
+          {(assessmentAnswers[fieldKey].type.startsWith('text/') || 
+            assessmentAnswers[fieldKey].type.includes('json') ||
+            assessmentAnswers[fieldKey].type.includes('javascript') ||
+            assessmentAnswers[fieldKey].type.includes('python') ||
+            assessmentAnswers[fieldKey].name.endsWith('.txt') ||
+            assessmentAnswers[fieldKey].name.endsWith('.js') ||
+            assessmentAnswers[fieldKey].name.endsWith('.py') ||
+            assessmentAnswers[fieldKey].name.endsWith('.json')) && (
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#155724' }}>
+                Content Preview:
+              </div>
+              <pre style={{
+                background: 'white',
+                padding: '12px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                maxHeight: '150px',
+                overflow: 'auto',
+                border: '1px solid #28a745',
+                fontFamily: 'monospace'
+              }}>
+                {(() => {
+                  try {
+                    const base64Content = assessmentAnswers[fieldKey].base64;
+                    if (base64Content.includes('base64,')) {
+                      const content = atob(base64Content.split('base64,')[1]);
+                      return content.length > 500 ? content.substring(0, 500) + '...' : content;
+                    }
+                    return 'Preview not available';
+                  } catch (e) {
+                    return 'Preview not available';
+                  }
+                })()}
+              </pre>
+            </div>
+          )}
+          
+          {/* For other file types */}
+          {!assessmentAnswers[fieldKey].type.startsWith('image/') && 
+           !assessmentAnswers[fieldKey].type.startsWith('text/') &&
+           !assessmentAnswers[fieldKey].type.includes('json') &&
+           !assessmentAnswers[fieldKey].type.includes('javascript') &&
+           !assessmentAnswers[fieldKey].type.includes('python') &&
+           !assessmentAnswers[fieldKey].name.endsWith('.txt') &&
+           !assessmentAnswers[fieldKey].name.endsWith('.js') &&
+           !assessmentAnswers[fieldKey].name.endsWith('.py') &&
+           !assessmentAnswers[fieldKey].name.endsWith('.json') && (
             <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-              gap: '20px'
+              background: 'white', 
+              padding: '15px', 
+              borderRadius: '4px',
+              textAlign: 'center',
+              color: '#155724',
+              fontWeight: 'bold',
+              border: '1px solid #28a745'
             }}>
-              <div style={{ 
-                textAlign: 'center', 
-                background: 'white', 
-                padding: '20px', 
-                borderRadius: '8px', 
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#667eea', marginBottom: '10px' }}>
-                  {selectedSubmission.performanceStats.percentage}%
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Overall Score</div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                  {selectedSubmission.performanceStats.totalEarned} out of {selectedSubmission.performanceStats.totalPossible} points
-                </div>
-              </div>
-              
-              <div style={{ 
-                textAlign: 'center', 
-                background: 'white', 
-                padding: '20px', 
-                borderRadius: '8px', 
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#007bff', marginBottom: '10px' }}>
-                  {selectedSubmission.performanceStats.totalQuestions}
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Total Questions</div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                  In this assessment
-                </div>
-              </div>
+              📄 File uploaded successfully - Preview not available for this file type
+            </div>
+          )}
+        </div>
+      )}
+      
+      {!studentAnswer && !replacingStates[fieldKey] && !assessmentAnswers[fieldKey] && (
+        <div style={{ color: '#666', fontStyle: 'italic', marginTop: '5px' }}>
+          No previous answer submitted
+        </div>
+      )}
+    </div>
+  )}
+</div>
+                              )
+                          ) : (
+                            // Allow file upload for active assessment
+                            <FileUploadWithBase64
+                              onFileConverted={(fileData) => handleAnswerChange(fieldKey, fileData)}
+                              currentValue={assessmentAnswers[fieldKey]}
+                              maxSize={5 * 1024 * 1024}
+                            />
+                          )
+                        ) : type === 'text' ? (
+                          isViewOnly ? (
+                            hasGrade ? (
+                              // Display submitted text/code
+                              <div style={{
+                                background: '#f8f9fa',
+                                padding: '12px',
+                                borderRadius: '6px',
+                                whiteSpace: 'pre-wrap',
+                                fontFamily: type === 'code' ? 'monospace' : 'inherit',
+                                fontSize: type === 'code' ? '13px' : '14px',
+                                border: '1px solid #e0e0e0'
+                              }}>
+                                {studentAnswer || "No answer submitted"}
+                              </div>
+                            ) : (
+                              <textarea
+                                rows="4"
+                                placeholder="Enter or edit your answer here..."
+                                style={{
+                                  fontFamily: type === 'code' ? 'monospace' : 'inherit',
+                                  fontSize: type === 'code' ? '13px' : '14px',
+                                  width: '100%',
+                                  padding: '10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #ccc'
+                                }}
+                                defaultValue={studentAnswer || ""}
+                                onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
+                              />
+                            )
+                          ) : (
+                            // Allow text/code input for active assessment
+                            <textarea
+                              rows="4"
+                              placeholder="Enter your answer here..."
+                              style={{
+                                fontFamily: type === 'code' ? 'monospace' : 'inherit',
+                                fontSize: type === 'code' ? '13px' : '14px'
+                              }}
+                              value={assessmentAnswers[fieldKey] || ''}
+                              onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
+                            />
+                          )
+                        ) : type === 'url' ? (
+                          isViewOnly ? (
+                            // Display submitted URL
+                            studentAnswer ? (
+                              <div>
+                                <a href={studentAnswer} target="_blank" rel="noreferrer" style={{ color: '#007bff', textDecoration: 'underline' }}>
+                                  {studentAnswer}
+                                </a>
+                                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                  Click to open in new tab
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ color: '#666', fontStyle: 'italic' }}>No URL submitted</div>
+                            )
+                          ) : (
+                            // Allow URL input for active assessment
+                            <input
+                              type="url"
+                              placeholder="https://github.com/username/repository"
+                              value={assessmentAnswers[fieldKey] || ''}
+                              onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
+                            />
+                          )
+                        ) : (
+                          isViewOnly ? (
+                            // Display other answer types
+                            <div style={{
+                              background: '#f8f9fa',
+                              padding: '10px',
+                              borderRadius: '6px',
+                              border: '1px solid #e0e0e0'
+                            }}>
+                              {studentAnswer || "No answer submitted"}
+                            </div>
+                          ) : (
+                            // Allow other input types for active assessment
+                            <input
+                              type="text"
+                              placeholder="Enter your answer"
+                              value={assessmentAnswers[fieldKey] || ''}
+                              onChange={(e) => handleAnswerChange(fieldKey, e.target.value)}
+                            />
+                          )
+                        )}
 
-              {/* <div style={{ 
+
+                      </div>
+                    );
+                  })}
+
+                  {/* Individual Question Performance for Detailed Results */}
+                  {isDetailedResults && hasGrade && (
+                    <div style={{
+                      background: questionGrade === maxScore ? '#d4edda' :
+                        questionGrade > 0 ? '#fff3cd' : '#f8d7da',
+                      border: `1px solid ${questionGrade === maxScore ? '#c3e6cb' :
+                        questionGrade > 0 ? '#ffeaa7' : '#f5c6cb'}`,
+                      borderRadius: '8px',
+                      padding: '12px',
+                      marginTop: '10px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong>Your Score: {questionGrade}/{maxScore} points</strong>
+                          {maxScore > 0 && (
+                            <span style={{ marginLeft: '10px', fontSize: '14px' }}>
+                              ({((questionGrade / maxScore) * 100).toFixed(1)}%)
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '20px' }}>
+                          {questionGrade === maxScore ? '✅' : questionGrade > 0 ? '🔶' : '❌'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Show submit button only if NOT already submitted and not in detailed results */}
+          {!isGraded && !isDetailedResults && (
+            <div style={{ textAlign: 'center', marginTop: '30px' }}>
+              <button
+                className="btn"
+                onClick={submitAssessmentWithAnswers}
+                style={{
+                  background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                  fontSize: '18px', padding: '18px 35px', fontWeight: 'bold'
+                }}
+              >
+                🎯 SUBMIT ASSESSMENT
+              </button>
+            </div>
+          )}
+
+          {isDetailedResults && selectedSubmission?.performanceStats && (
+            <div style={{ background: '#f8f9fa', padding: '25px', borderRadius: '8px', margin: '25px 0', border: '2px solid #667eea' }}>
+              <h4 style={{ textAlign: 'center', margin: '0 0 20px 0', color: '#667eea' }}>
+                📊 Final Performance Summary
+              </h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: '20px'
+              }}>
+                <div style={{
+                  textAlign: 'center',
+                  background: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#667eea', marginBottom: '10px' }}>
+                    {selectedSubmission.performanceStats.percentage}%
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Overall Score</div>
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    {selectedSubmission.performanceStats.totalEarned} out of {selectedSubmission.performanceStats.totalPossible} points
+                  </div>
+                </div>
+
+                <div style={{
+                  textAlign: 'center',
+                  background: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#007bff', marginBottom: '10px' }}>
+                    {selectedSubmission.performanceStats.totalQuestions}
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Total Questions</div>
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    In this assessment
+                  </div>
+                </div>
+
+                {/* <div style={{ 
                 textAlign: 'center', 
                 background: 'white', 
                 padding: '20px', 
@@ -3697,49 +3804,49 @@ const renderForgotPassword = () => (
                 </div>
               </div> */}
 
-              <div style={{ 
-                textAlign: 'center', 
-                background: 'white', 
-                padding: '20px', 
-                borderRadius: '8px', 
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#6f42c1', marginBottom: '10px' }}>
-                  {selectedSubmission.performanceStats.totalEarned}
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Points Earned</div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                  Out of {selectedSubmission.performanceStats.totalPossible} possible
+                <div style={{
+                  textAlign: 'center',
+                  background: 'white',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ fontSize: '2.5em', fontWeight: 'bold', color: '#6f42c1', marginBottom: '10px' }}>
+                    {selectedSubmission.performanceStats.totalEarned}
+                  </div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>Points Earned</div>
+                  <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    Out of {selectedSubmission.performanceStats.totalPossible} possible
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{
-              marginTop: '20px',
-              padding: '15px',
-              background: selectedSubmission.performanceStats.percentage >= 80 ? '#d4edda' : 
-                         selectedSubmission.performanceStats.percentage >= 60 ? '#fff3cd' : '#f8d7da',
-              border: `1px solid ${selectedSubmission.performanceStats.percentage >= 80 ? '#c3e6cb' : 
-                                 selectedSubmission.performanceStats.percentage >= 60 ? '#ffeaa7' : '#f5c6cb'}`,
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
-                {selectedSubmission.performanceStats.percentage >= 80 ? '🎉 Excellent Performance!' :
-                 selectedSubmission.performanceStats.percentage >= 60 ? '👍 Good Work!' : '📚 Keep Learning!'}
-              </div>
-              <div style={{ fontSize: '14px' }}>
-                Assessment completed on {new Date(selectedSubmission.submittedAt).toLocaleDateString()} at{' '}
-                {new Date(selectedSubmission.submittedAt).toLocaleTimeString()}
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                background: selectedSubmission.performanceStats.percentage >= 80 ? '#d4edda' :
+                  selectedSubmission.performanceStats.percentage >= 60 ? '#fff3cd' : '#f8d7da',
+                border: `1px solid ${selectedSubmission.performanceStats.percentage >= 80 ? '#c3e6cb' :
+                  selectedSubmission.performanceStats.percentage >= 60 ? '#ffeaa7' : '#f5c6cb'}`,
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
+                  {selectedSubmission.performanceStats.percentage >= 80 ? '🎉 Excellent Performance!' :
+                    selectedSubmission.performanceStats.percentage >= 60 ? '👍 Good Work!' : '📚 Keep Learning!'}
+                </div>
+                <div style={{ fontSize: '14px' }}>
+                  Assessment completed on {new Date(selectedSubmission.submittedAt).toLocaleDateString()} at{' '}
+                  {new Date(selectedSubmission.submittedAt).toLocaleTimeString()}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 
 
@@ -3752,7 +3859,7 @@ const renderForgotPassword = () => (
       );
     }
 
-    if (type === 'file') {
+    if (type === 'file' || type === 'code') {
       // Handle file objects safely
       if (typeof answer === 'object' && answer.base64) {
         const isImage = answer.type.startsWith('image/');
