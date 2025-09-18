@@ -51,7 +51,8 @@ const [isReplacing, setIsReplacing] = useState(false);
 const [originalAnswer, setOriginalAnswer] = useState(null);
 const [replacingStates, setReplacingStates] = useState({});
 const [originalAnswers, setOriginalAnswers] = useState({});
-
+const [selectedAssessmentFilter, setSelectedAssessmentFilter] = useState('all');
+const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
 
   // Fetch assessments from Firestore
   const fetchAssessments = useCallback(async () => {
@@ -2362,30 +2363,81 @@ Available points for this question: ${availablePoints} points`);
   );
 
   // Render Grade Submissions Tab
-  const renderGradeSubmissions = () => {
+ const renderGradeSubmissions = () => {
     const allSubmissions = extractAllSubmissionsFromAssessments();
+    
+    // Get unique student list
+    const uniqueStudents = [...new Set(allSubmissions.map(s => s.studentId))];
+    
+    // Filter submissions based on selected assessment AND student
+    const filteredSubmissions = allSubmissions.filter(s => {
+      const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
+      const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
+      return matchesAssessment && matchesStudent;
+    });
 
     return (
       <div>
-        <h3>Grade Submissions</h3>
+        {/* Only change: Wrap h3 and add dropdowns */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3>Grade Submissions</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select 
+              value={selectedAssessmentFilter || 'all'}
+              onChange={(e) => setSelectedAssessmentFilter(e.target.value)}
+              style={{
+                padding: '8px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="all">All Assessments</option>
+              {assessments.map(assessment => (
+                <option key={assessment.firebaseId} value={assessment.firebaseId}>
+                  {assessment.title}
+                </option>
+              ))}
+            </select>
+            
+            <select 
+              value={selectedStudentFilter || 'all'}
+              onChange={(e) => setSelectedStudentFilter(e.target.value)}
+              style={{
+                padding: '8px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="all">All Students</option>
+              {uniqueStudents.map(studentId => {
+                const studentName = allSubmissions.find(s => s.studentId === studentId)?.studentName || studentId;
+                return (
+                  <option key={studentId} value={studentId}>
+                    {studentName}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
 
-        {/* Summary Statistics */}
-        {allSubmissions.length > 0 && (
+        {/* Summary Statistics - change to filteredSubmissions */}
+        {filteredSubmissions.length > 0 && (
           <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
-            <strong>Summary:</strong> {allSubmissions.length} total submissions | {allSubmissions.filter(s => s.graded).length} graded | {allSubmissions.filter(s => !s.graded).length} pending
+            <strong>Summary:</strong> {filteredSubmissions.length} total submissions | {filteredSubmissions.filter(s => s.graded).length} graded | {filteredSubmissions.filter(s => !s.graded).length} pending
           </div>
         )}
 
-        {/* No Submissions State */}
-        {allSubmissions.length === 0 ? (
+        {/* No Submissions State - change to filteredSubmissions */}
+        {filteredSubmissions.length === 0 ? (
           <div className="question-card">
             <h4>No Submissions Found</h4>
             <p>There are currently no student submissions in the system.</p>
           </div>
         ) : (
-          /* Submissions List */
+          /* Submissions List - change to filteredSubmissions */
           <div className="submissions-container">
-            {allSubmissions.map(submission => {
+            {filteredSubmissions.map(submission => {
               // Find assessment using firebaseAssessmentId
               const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
 
@@ -2418,35 +2470,6 @@ Available points for this question: ${availablePoints} points`);
                     <div><strong>Questions Answered:</strong> {answerCount} out of {assessment.questions?.length || 0}</div>
                     <div><strong>Total Score:</strong> {submission.totalScore || 0} / {assessment.maxScore}</div>
 
-                    {/* Show file uploads if any
-                  {submission.answers && Object.keys(submission.answers).length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                      <strong>Submission Summary:</strong>
-                      <div style={{ marginLeft: '15px', fontSize: '14px', color: '#666' }}>
-                        {Object.entries(submission.answers).map(([questionId, questionData]) => {
-                          if (!questionData || !questionData.answers) return null;
-                          
-                          const answers = questionData.answers;
-                          const hasFile = Object.values(answers).some(answer => 
-                            typeof answer === 'object' && answer.base64
-                          );
-                          const hasText = Object.values(answers).some(answer => 
-                            typeof answer === 'string' && answer.trim()
-                          );
-
-                          return (
-                            <div key={questionId} style={{ marginBottom: '5px' }}>
-                              Question {questionId.slice(-4)}: 
-                              {hasFile && <span style={{ color: '#0969da', marginLeft: '5px' }}>📎 File</span>}
-                              {hasText && <span style={{ color: '#28a745', marginLeft: '5px' }}>📝 Text</span>}
-                              {!hasFile && !hasText && <span style={{ color: '#dc3545', marginLeft: '5px' }}>❌ No Answer</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )} */}
-
                     {submission.submissionNotes && (
                       <div><strong>Notes:</strong> {submission.submissionNotes}</div>
                     )}
@@ -2458,41 +2481,6 @@ Available points for this question: ${availablePoints} points`);
                       <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
                     </div>
                   )}
-
-                  {/* Show grading progress if partially graded
-                {isGraded && submission.questionScores && Object.keys(submission.questionScores).length > 0 && (
-                  <div style={{ 
-                    marginTop: '10px', 
-                    padding: '8px', 
-                    backgroundColor: '#e3f2fd', 
-                    borderRadius: '4px' 
-                  }}>
-                    <strong>Grade Breakdown:</strong>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
-                      {Object.entries(submission.questionScores).map(([questionId, score]) => {
-                        const question = assessment.questions.find(q => q.id === questionId);
-                        const maxPoints = question ? question.points : 0;
-                        const percentage = maxPoints > 0 ? ((score / maxPoints) * 100).toFixed(0) : 0;
-                        
-                        return (
-                          <span 
-                            key={questionId}
-                            style={{
-                              background: percentage == 100 ? '#28a745' : percentage > 0 ? '#ffc107' : '#dc3545',
-                              color: 'white',
-                              padding: '2px 6px',
-                              borderRadius: '12px',
-                              fontSize: '12px',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            Q{questionId.slice(-2)}: {score}/{maxPoints}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )} */}
 
                   {/* Action Section */}
                   <div style={{ marginTop: '15px' }}>
@@ -2516,13 +2504,6 @@ Available points for this question: ${availablePoints} points`);
                         }}>
                           ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
                         </div>
-                        {/* <button
-                          className="btn btn-secondary"
-                          onClick={() => gradeSubmission(submission.id)}
-                          style={{ fontSize: '12px', padding: '6px 12px' }}
-                        >
-                          Edit Grade
-                        </button> */}
                       </div>
                     )}
                   </div>
