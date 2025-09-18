@@ -598,6 +598,75 @@ const [originalAnswers, setOriginalAnswers] = useState({});
     }
   }
 
+  const handleEditQuestion = (firebaseId, question) => {
+    // Example: Use prompts for quick editing (you can replace with a modal/form)
+    const newText = prompt("Edit question text:", question.text);
+    if (newText === null) return; // User cancelled
+
+    const newPoints = prompt("Edit points:", question.points);
+    if (newPoints === null) return; // User cancelled
+
+    const newInstructions = prompt("Edit instructions:", question.instructions || "");
+    
+    const updatedData = {
+      text: newText,
+      points: parseInt(newPoints) || question.points,
+      instructions: newInstructions,
+      // Keep other fields the same
+      types: question.types,
+      textLimit: question.textLimit,
+      id: question.id // Keep the same id
+    };
+
+    editQuestion(firebaseId, question.id, updatedData);
+};
+const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
+    console.log("Editing question", firebaseId, questionId, updatedQuestionData);
+    if (!firebaseId) {
+      alert("Error: Missing firebaseId");
+      return;
+    }
+
+    try {
+      // ✅ Find assessment by firebaseId
+      const assessment = assessments.find((a) => a.firebaseId === firebaseId);
+      if (!assessment) {
+        alert("Assessment not found");
+        return;
+      }
+
+      // ✅ Update question locally
+      const updatedQuestions = (assessment.questions || []).map((q) =>
+        q.id === questionId ? { ...q, ...updatedQuestionData } : q
+      );
+
+      // ✅ Update Firestore (always use firebaseId)
+      const assessmentRef = doc(db, "assessments", firebaseId);
+      await updateDoc(assessmentRef, {
+        questions: updatedQuestions,
+      });
+
+      // ✅ Update local state
+      setAssessments((prev) =>
+        prev.map((a) =>
+          a.firebaseId === firebaseId ? { ...a, questions: updatedQuestions } : a
+        )
+      );
+
+      // ✅ Update selectedAssessmentForQuestions if it's the same doc
+      if (selectedAssessmentForQuestions?.firebaseId === firebaseId) {
+        setSelectedAssessmentForQuestions((prev) => ({
+          ...prev!,
+          questions: updatedQuestions,
+        }));
+      }
+
+      alert("Question updated successfully!");
+    } catch (error) {
+      console.error("Error updating question:", error);
+      alert("Failed to update question. Please try again.");
+    }
+  };
   const activateAssessmentNow = async (assessmentId) => {
     console.log('firebase assessment id', assessmentId);
     // log all ids in state
@@ -4309,6 +4378,50 @@ if (fieldKey in assessmentAnswers) {
   // Render Questions View Modal
   const renderQuestionsViewModal = () => {
     if (!showQuestionsViewModal || !selectedAssessmentForQuestions) return null;
+ const startEditingQuestion = (question) => {
+        setEditingQuestionId(question.id);
+        setEditedQuestion({
+            text: question.text,
+            points: question.points,
+            types: question.types,
+            textLimit: question.textLimit || '',
+            instructions: question.instructions || ''
+        });
+    };
+
+    const cancelEditing = () => {
+        setEditingQuestionId(null);
+        setEditedQuestion({});
+    };
+
+    const saveEditedQuestion = async (assessmentId, questionId) => {
+        try {
+            // Call your update function here
+            await updateQuestion(assessmentId, questionId, editedQuestion);
+            setEditingQuestionId(null);
+            setEditedQuestion({});
+            // Optionally refresh the assessment data
+            // fetchAssessments();
+        } catch (error) {
+            console.error('Error updating question:', error);
+        }
+    };
+
+    const handleEditChange = (field, value) => {
+        setEditedQuestion(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleTypesChange = (type) => {
+        setEditedQuestion(prev => ({
+            ...prev,
+            types: prev.types.includes(type) 
+                ? prev.types.filter(t => t !== type)
+                : [...prev.types, type]
+        }));
+    };
 
     return (
       <div style={{
@@ -4342,13 +4455,21 @@ if (fieldKey in assessmentAnswers) {
                 {question.textLimit && <p><strong>Text Minimum:</strong> {question.textLimit} characters</p>}
                 <p><strong>Question:</strong> {question.text}</p>
                 {question.instructions && <p><strong>Instructions:</strong> {question.instructions}</p>}
-                <button
-                  className="btn btn-danger"
-                  onClick={() => deleteQuestion(selectedAssessmentForQuestions.firebaseId, question.id)}
-                  style={{ marginTop: '10px' }}
-                >
-                  Delete Question
-                </button>
+               <div style={{ marginTop: '10px' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleEditQuestion(selectedAssessmentForQuestions.firebaseId, question)}
+                    style={{ marginRight: '10px' }}
+                  >
+                    Edit Question
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => deleteQuestion(selectedAssessmentForQuestions.firebaseId, question.id)}
+                  >
+                    Delete Question
+                  </button>
+                </div>
               </div>
             ))
           ) : (
