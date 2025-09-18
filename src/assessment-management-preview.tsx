@@ -412,6 +412,19 @@ const [originalAnswers, setOriginalAnswers] = useState({});
     setSelectedAnswerTypes(['text']);
     setSelectedTextLimit(null);
     setShowQuestionModal(true);
+
+    // Calculate and display available points
+    const assessment = assessments.find((a) => a.firebaseId === assessmentId);
+    if (assessment) {
+      const currentTotalPoints = (assessment.questions || []).reduce(
+        (sum, q) => sum + (q.points || 0), 
+        0
+      );
+      const availablePoints = (assessment.maxScore || 0) - currentTotalPoints;
+      console.log(`Available points for new question: ${availablePoints}`);
+      // You can set this to state if you want to display it in the modal
+      // setAvailablePoints(availablePoints);
+    }
   };
 
   const closeQuestionModal = () => {
@@ -440,6 +453,35 @@ const [originalAnswers, setOriginalAnswers] = useState({});
       alert("Please select at least one answer type");
       return;
     }
+
+    // ✅ Find assessment to check maxScore
+    const assessment = assessments.find((a) => a.firebaseId === currentAssessmentId);
+    if (!assessment) {
+      alert("Assessment not found");
+      return;
+    }
+
+    // ✅ Calculate current total points
+    const currentTotalPoints = (assessment.questions || []).reduce(
+      (sum, q) => sum + (q.points || 0), 
+      0
+    );
+    
+    // ✅ Check if adding this question would exceed maxScore
+    const newQuestionPoints = parseInt(points);
+    const newTotalPoints = currentTotalPoints + newQuestionPoints;
+    const maxScore = assessment.maxScore || 0;
+    
+    if (newTotalPoints > maxScore) {
+      alert(`Cannot add question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
+      
+Current total: ${currentTotalPoints} points
+Question points: ${newQuestionPoints} points
+Available points: ${maxScore - currentTotalPoints} points`);
+      return;
+    }
+
+
 
     const question = {
       id: "q_" + Date.now(),
@@ -620,6 +662,7 @@ const [originalAnswers, setOriginalAnswers] = useState({});
 
     editQuestion(firebaseId, question.id, updatedData);
 };
+
 const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
     console.log("Editing question", firebaseId, questionId, updatedQuestionData);
     if (!firebaseId) {
@@ -632,6 +675,41 @@ const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
       const assessment = assessments.find((a) => a.firebaseId === firebaseId);
       if (!assessment) {
         alert("Assessment not found");
+        return;
+      }
+
+      // ✅ Calculate total points WITH the edit
+      const oldQuestion = (assessment.questions || []).find(q => q.id === questionId);
+      if (!oldQuestion) {
+        alert("Question not found");
+        return;
+      }
+
+      const oldPoints = oldQuestion.points || 0;
+      const newPoints = updatedQuestionData.points || 0;
+      
+      // Calculate current total points
+      const currentTotalPoints = (assessment.questions || []).reduce(
+        (sum, q) => sum + (q.points || 0), 
+        0
+      );
+      
+      // Calculate what the new total would be after the edit
+      const newTotalPoints = currentTotalPoints - oldPoints + newPoints;
+      const maxScore = assessment.maxScore || 0;
+      
+      // ✅ Check if the edit would exceed maxScore
+      if (newTotalPoints > maxScore) {
+        const pointChange = newPoints - oldPoints;
+        const availablePoints = maxScore - currentTotalPoints + oldPoints;
+        
+        alert(`Cannot update question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
+        
+Current total: ${currentTotalPoints} points
+Old question points: ${oldPoints} points
+New question points: ${newPoints} points
+Point change: ${pointChange > 0 ? '+' : ''}${pointChange} points
+Available points for this question: ${availablePoints} points`);
         return;
       }
 
@@ -666,7 +744,7 @@ const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
       console.error("Error updating question:", error);
       alert("Failed to update question. Please try again.");
     }
-  };
+};
   const activateAssessmentNow = async (assessmentId) => {
     console.log('firebase assessment id', assessmentId);
     // log all ids in state
