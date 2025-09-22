@@ -15,7 +15,6 @@ const AssessmentManagementSystem = () => {
 
   const [assessments, setAssessments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [students, setStudents] = useState(['john_doe', 'jane_smith', 'alice_johnson', 'bob_wilson', 'emma_davis']);
   const [currentAssessmentId, setCurrentAssessmentId] = useState(null);
   const [fileId, setFileId] = useState(null);
   const [currentTimer, setCurrentTimer] = useState(null);
@@ -226,12 +225,13 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
         totalSubmissions += uniqueStudents.size;
       }
     });
+  const activeStudents = dbStudents.filter(student => student.isActive);
 
     return {
       totalAssessments: assessments.length,
       totalQuestions: assessments.reduce((sum, assessment) => sum + (assessment.questions ? assessment.questions.length : 0), 0),
       totalSubmissions: totalSubmissions, // ✅ Now counts from Firebase data
-      totalStudents: students.length
+      totalStudents: activeStudents.length
     };
   };
   const getSelectedStudents = () => {
@@ -2364,220 +2364,350 @@ Available points for this question: ${availablePoints} points`);
 
   // Render Grade Submissions Tab
 const renderGradeSubmissions = () => {
-    const allSubmissions = extractAllSubmissionsFromAssessments();
-    
-    // Filter submissions based on selected assessment AND student
-    const filteredSubmissions = allSubmissions.filter(s => {
-      const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
-      const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
-      return matchesAssessment && matchesStudent;
-    });
+  const allSubmissions = extractAllSubmissionsFromAssessments();
 
-    return (
-      <div>
-        {/* Only change: Wrap h3 and add dropdowns */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3>Grade Submissions</h3>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <select 
-              value={selectedAssessmentFilter || 'all'}
-              onChange={(e) => setSelectedAssessmentFilter(e.target.value)}
-              style={{
-                padding: '8px',
-                borderRadius: '5px',
-                border: '1px solid #ddd'
-              }}
-            >
-              <option value="all">All Assessments</option>
-              {assessments.map(assessment => (
-                <option key={assessment.firebaseId} value={assessment.firebaseId}>
-                  {assessment.title}
-                </option>
-              ))}
-            </select>
-            
-            <select 
-              value={selectedStudentFilter || 'all'}
-              onChange={(e) => setSelectedStudentFilter(e.target.value)}
-              style={{
-                padding: '8px',
-                borderRadius: '5px',
-                border: '1px solid #ddd'
-              }}
-            >
-              <option value="all">All Students</option>
-              {dbStudents.map(student => {
-                // Try different possible field names for the student name
-                const studentName = student.name || student.fullName || student.displayName || student.firstName || student.studentName || student.email;
-                return (
-                  <option key={student.email || student.id} value={student.email}>
-                    {studentName === student.email ? student.email : `${studentName} (${student.email})`}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+  return (
+    <div>
+      <h3>Grade Submissions</h3>
+
+      {/* Summary Statistics */}
+      {allSubmissions.length > 0 && (
+        <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+          <strong>Summary:</strong> {allSubmissions.length} total submissions | {allSubmissions.filter(s => s.graded).length} graded | {allSubmissions.filter(s => !s.graded).length} pending
         </div>
+      )}
 
-        {/* Rest of your code remains the same... */}
-        {/* Summary Statistics - change to filteredSubmissions */}
-        {filteredSubmissions.length > 0 && (
-          <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
-            <strong>Summary:</strong> {filteredSubmissions.length} total submissions | {filteredSubmissions.filter(s => s.graded).length} graded | {filteredSubmissions.filter(s => !s.graded).length} pending
-          </div>
-        )}
-
-        {/* No Submissions State - change to filteredSubmissions */}
-        {filteredSubmissions.length === 0 ? (
-          <div className="question-card">
-            <h4>No Submissions Found</h4>
-            <p>There are currently no student submissions in the system.</p>
-          </div>
-        ) : (
-          /* Submissions List - change to filteredSubmissions */
-          <div className="submissions-container">
-            {filteredSubmissions.map(submission => {
-              // Find assessment using firebaseAssessmentId
-              const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-
-              // Skip if assessment not found
-              if (!assessment) {
-                console.warn(`Assessment not found for submission ${submission.id}`);
-                return null;
-              }
-
-              // Safely count answers
-              const answerCount = countAnswers(submission.answers);
-              const isGraded = submission.graded;
-              const submissionDate = new Date(submission.submittedAt);
-
-              return (
-                <div key={submission.id} className="question-card">
-                  {/* Header Section */}
-                  <div className="question-header">
-                    <h4>📋 {assessment.title} - {submission.studentName}</h4>
-                    <span className={`status-badge ${isGraded ? 'status-open' : 'status-pending'}`}>
-                      {isGraded ? 'Graded' : 'Pending'}
-                    </span>
-                  </div>
-
-                  {/* Submission Details */}
-                  <div className="question-meta">
-                    <div><strong>Student Email:</strong> {submission.studentId}</div>
-                    <div><strong>Submitted:</strong> {submissionDate.toLocaleString()}</div>
-                    <div><strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}</div>
-                    <div><strong>Questions Answered:</strong> {answerCount} out of {assessment.questions?.length || 0}</div>
-                    <div><strong>Total Score:</strong> {submission.totalScore || 0} / {assessment.maxScore}</div>
-
-                    {submission.submissionNotes && (
-                      <div><strong>Notes:</strong> {submission.submissionNotes}</div>
-                    )}
-                  </div>
-
-                  {/* Time Information */}
-                  {submission.timeSpent && (
-                    <div className="time-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-                      <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
-                    </div>
-                  )}
-
-                  {/* Action Section */}
-                  <div style={{ marginTop: '15px' }}>
-                    {!isGraded ? (
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => gradeSubmission(submission.id)}
-                      >
-                        Grade Submission ({answerCount} questions)
-                      </button>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <div style={{
-                          padding: '8px 12px',
-                          backgroundColor: '#d4edda',
-                          border: '1px solid #c3e6cb',
-                          borderRadius: '4px',
-                          color: '#155724',
-                          fontSize: '14px',
-                          fontWeight: 'bold'
-                        }}>
-                          ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Grade Display for Completed Submissions */}
-                  {isGraded && submission.feedback && (
-                    <div className="grade-feedback" style={{
-                      marginTop: '15px',
-                      padding: '10px',
-                      backgroundColor: '#e8f5e8',
-                      borderRadius: '5px',
-                      borderLeft: '4px solid #28a745'
-                    }}>
-                      <strong>Feedback:</strong>
-                      <div style={{ marginTop: '5px' }}>{submission.feedback}</div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
-  // Render View Results Tab
-  // Render View Results Tab
-  const renderViewResults = () => {
-    const allSubmissions = extractAllSubmissionsFromAssessments();
-    const gradedSubmissions = allSubmissions.filter(s => s.graded);
-
-    return (
-      <div>
-        <h3>Assessment Results</h3>
-
-        {gradedSubmissions.length === 0 ? (
-          <p>No graded submissions yet.</p>
-        ) : (
-          gradedSubmissions.map(submission => {
+      {/* No Submissions State */}
+      {allSubmissions.length === 0 ? (
+        <div className="question-card">
+          <h4>No Submissions Found</h4>
+          <p>There are currently no student submissions in the system.</p>
+        </div>
+      ) : (
+        /* Submissions List */
+        <div className="submissions-container">
+          {allSubmissions.map(submission => {
+            // Find assessment using firebaseAssessmentId
             const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-            if (!assessment) return null;
 
-            // Use totalScore instead of submission.score
-            const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+            // Skip if assessment not found
+            if (!assessment) {
+              console.warn(`Assessment not found for submission ${submission.id}`);
+              return null;
+            }
+
+            // Safely count answers
+            const answerCount = countAnswers(submission.answers);
+            const isGraded = submission.graded;
+            const submissionDate = new Date(submission.submittedAt);
 
             return (
               <div key={submission.id} className="question-card">
+                {/* Header Section */}
                 <div className="question-header">
-                  <h4>📊 {assessment.title} - {submission.studentName}</h4>
-                  <span className="status-badge status-open">{percentage}%</span>
+                  <h4>📋 {assessment.title} - {submission.studentName}</h4>
+                  <span className={`status-badge ${isGraded ? 'status-open' : 'status-pending'}`}>
+                    {isGraded ? 'Graded' : 'Pending'}
+                  </span>
                 </div>
-                <div className="question-meta">
-                  <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
-                  <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-                  <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
 
-                  {/* Optional: Show question breakdown
-                {Object.keys(submission.questionScores).length > 0 && (
-                  <div style={{ marginTop: '10px' }}>
-                    <strong>Question Breakdown:</strong>
-                    <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
-                      {Object.entries(submission.questionScores).map(([questionId, score]) => (
-                        <div key={questionId}>Question {questionId}: {score} points</div>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
+                {/* Submission Details */}
+                <div className="question-meta">
+                  <div><strong>Student Email:</strong> {submission.studentId}</div>
+                  <div><strong>Submitted:</strong> {submissionDate.toLocaleString()}</div>
+                  <div><strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}</div>
+                  <div><strong>Questions Answered:</strong> {answerCount} out of {assessment.questions?.length || 0}</div>
+                  <div><strong>Total Score:</strong> {submission.totalScore || 0} / {assessment.maxScore}</div>
+
+                  {submission.submissionNotes && (
+                    <div><strong>Notes:</strong> {submission.submissionNotes}</div>
+                  )}
                 </div>
+
+                {/* Time Information */}
+                {submission.timeSpent && (
+                  <div className="time-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                    <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
+                  </div>
+                )}
+
+                {/* Action Section */}
+                <div style={{ marginTop: '15px' }}>
+                  {!isGraded ? (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => gradeSubmission(submission.id)}
+                    >
+                      Grade Submission ({answerCount} questions)
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <div style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#d4edda',
+                        border: '1px solid #c3e6cb',
+                        borderRadius: '4px',
+                        color: '#155724',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}>
+                        ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grade Display for Completed Submissions */}
+                {isGraded && submission.feedback && (
+                  <div className="grade-feedback" style={{
+                    marginTop: '15px',
+                    padding: '10px',
+                    backgroundColor: '#e8f5e8',
+                    borderRadius: '5px',
+                    borderLeft: '4px solid #28a745'
+                  }}>
+                    <strong>Feedback:</strong>
+                    <div style={{ marginTop: '5px' }}>{submission.feedback}</div>
+                  </div>
+                )}
               </div>
             );
-          })
-        )}
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+  // Render View Results Tab
+  // Render View Results Tab
+//   const renderViewResults = () => {
+//     const allSubmissions = extractAllSubmissionsFromAssessments();
+//     const gradedSubmissions = allSubmissions.filter(s => s.graded);
+// // Apply filters to graded submissions
+//   const filteredGradedSubmissions = gradedSubmissions.filter(s => {
+//     const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
+//     const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
+//     return matchesAssessment && matchesStudent;
+//   });
+
+//     return (
+//       <div>
+//         <h3>Assessment Results</h3>
+
+//         {gradedSubmissions.length === 0 ? (
+//           <p>No graded submissions yet.</p>
+//         ) : (
+//           gradedSubmissions.map(submission => {
+//             const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+//             if (!assessment) return null;
+
+//             // Use totalScore instead of submission.score
+//             const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+
+//             return (
+//               <div key={submission.id} className="question-card">
+//                 <div className="question-header">
+//                   <h4>📊 {assessment.title} - {submission.studentName}</h4>
+//                   <span className="status-badge status-open">{percentage}%</span>
+//                 </div>
+//                 <div className="question-meta">
+//                   <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
+//                   <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+//                   <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+
+//                   {/* Optional: Show question breakdown
+//                 {Object.keys(submission.questionScores).length > 0 && (
+//                   <div style={{ marginTop: '10px' }}>
+//                     <strong>Question Breakdown:</strong>
+//                     <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+//                       {Object.entries(submission.questionScores).map(([questionId, score]) => (
+//                         <div key={questionId}>Question {questionId}: {score} points</div>
+//                       ))}
+//                     </div>
+//                   </div>
+//                 )} */}
+//                 </div>
+//               </div>
+//             );
+//           })
+//         )}
+//       </div>
+//     );
+//   };
+const renderViewResults = () => {
+  const allSubmissions = extractAllSubmissionsFromAssessments();
+  const gradedSubmissions = allSubmissions.filter(s => s.graded);
+  
+  // Apply filters to graded submissions
+  const filteredGradedSubmissions = gradedSubmissions.filter(s => {
+    const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
+    const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
+    return matchesAssessment && matchesStudent;
+  });
+
+  return (
+    <div>
+      {/* Header with filters */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h3>Assessment Results</h3>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <select 
+            value={selectedAssessmentFilter || 'all'}
+            onChange={(e) => setSelectedAssessmentFilter(e.target.value)}
+            style={{
+              padding: '8px',
+              borderRadius: '5px',
+              border: '1px solid #ddd'
+            }}
+          >
+            <option value="all">All Assessments</option>
+            {assessments.map(assessment => (
+              <option key={assessment.firebaseId} value={assessment.firebaseId}>
+                {assessment.title}
+              </option>
+            ))}
+          </select>
+          
+          <select 
+            value={selectedStudentFilter || 'all'}
+            onChange={(e) => setSelectedStudentFilter(e.target.value)}
+            style={{
+              padding: '8px',
+              borderRadius: '5px',
+              border: '1px solid #ddd'
+            }}
+          >
+            <option value="all">All Students</option>
+            {dbStudents.map(student => {
+              const studentName = student.name || student.fullName || student.displayName || student.firstName || student.studentName || student.email;
+              return (
+                <option key={student.email || student.id} value={student.email}>
+                  {studentName === student.email ? student.email : `${studentName} (${student.email})`}
+                </option>
+              );
+            })}
+          </select>
+        </div>
       </div>
-    );
-  };
+
+      {/* Summary Statistics */}
+      {filteredGradedSubmissions.length > 0 && (
+        <div className="stats-summary" style={{ 
+          marginBottom: '20px', 
+          padding: '15px', 
+          backgroundColor: '#f8f9fa', 
+          borderRadius: '5px',
+          border: '1px solid #dee2e6'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <strong>Results Summary:</strong> {filteredGradedSubmissions.length} graded submission(s)
+            </div>
+            <div style={{ fontSize: '14px', color: '#666' }}>
+              {allSubmissions.filter(s => !s.graded).length > 0 && (
+                <span>({allSubmissions.filter(s => !s.graded).length} pending grading)</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Results State */}
+      {filteredGradedSubmissions.length === 0 ? (
+        <div className="question-card">
+          <h4>No Results Found</h4>
+          <p>
+            {selectedAssessmentFilter !== 'all' || selectedStudentFilter !== 'all' 
+              ? 'No graded submissions match your filter criteria.' 
+              : 'No graded submissions yet.'}
+          </p>
+          {allSubmissions.filter(s => !s.graded).length > 0 && (
+            <p style={{ color: '#666' }}>
+              There are {allSubmissions.filter(s => !s.graded).length} submission(s) pending grading.
+            </p>
+          )}
+        </div>
+      ) : (
+        /* Results List */
+        filteredGradedSubmissions.map(submission => {
+          const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+          if (!assessment) return null;
+
+          const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+          
+          // Determine grade level for color coding
+          let gradeLevel = 'status-pending';
+          if (parseFloat(percentage) >= 80) gradeLevel = 'status-open';
+          else if (parseFloat(percentage) >= 60) gradeLevel = 'status-pending';
+          else gradeLevel = 'status-closed';
+
+          return (
+            <div key={submission.id} className="question-card">
+              <div className="question-header">
+                <h4>📊 {assessment.title} - {submission.studentName}</h4>
+                <span className={`status-badge ${gradeLevel}`}>{percentage}%</span>
+              </div>
+              <div className="question-meta">
+                <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore} points<br />
+                {/* <strong>Questions Answered:</strong> {submission.questionsAnswered || Object.keys(submission.answers || {}).length}<br /> */}
+                <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+                <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+              </div>
+
+              {/* Grade breakdown if available */}
+              {submission.questionScores && Object.keys(submission.questionScores).length > 0 && (
+                <div style={{ 
+                  marginTop: '15px', 
+                  padding: '10px', 
+                  backgroundColor: '#e8f5e8', 
+                  borderRadius: '5px',
+                  borderLeft: '4px solid #28a745' 
+                }}>
+                  <strong>Question Scores:</strong>
+                  <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
+                    {Object.entries(submission.questionScores).map(([questionId, score], index) => {
+                      const question = assessment.questions?.find(q => q.id === questionId);
+                      const maxScore = question?.points || 0;
+                      return (
+                        <div key={questionId} style={{ 
+                          padding: '5px 8px', 
+                          backgroundColor: 'white', 
+                          borderRadius: '4px',
+                          border: '1px solid #dee2e6',
+                          fontSize: '12px'
+                        }}>
+                          <strong>Q{index + 1}:</strong> {score}/{maxScore}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Performance Badge
+              <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                <div style={{
+                  display: 'inline-block',
+                  padding: '10px 20px',
+                  borderRadius: '20px',
+                  background: parseFloat(percentage) >= 80 ? 'linear-gradient(135deg, #28a745, #20c997)' :
+                             parseFloat(percentage) >= 60 ? 'linear-gradient(135deg, #ffc107, #ff9800)' :
+                             'linear-gradient(135deg, #dc3545, #c82333)',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}>
+                  {parseFloat(percentage) >= 80 ? '🏆 Excellent!' :
+                   parseFloat(percentage) >= 60 ? '👍 Good Job!' :
+                   '📚 Keep Practicing!'}
+                </div>
+              </div> */}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+};
 
   // Render Student Dashboard
   const renderStudentDashboard = () => (
