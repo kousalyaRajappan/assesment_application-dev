@@ -45,13 +45,21 @@ const AssessmentManagementSystem = () => {
   const newPasswordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
   const [forgotEmail, setForgotEmail] = useState(""); // store email after step 1
-const fileInputRef = useRef(null);
-const [isReplacing, setIsReplacing] = useState(false);
-const [originalAnswer, setOriginalAnswer] = useState(null);
-const [replacingStates, setReplacingStates] = useState({});
-const [originalAnswers, setOriginalAnswers] = useState({});
-const [selectedAssessmentFilter, setSelectedAssessmentFilter] = useState('all');
-const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
+  const fileInputRef = useRef(null);
+  const [isReplacing, setIsReplacing] = useState(false);
+  const [originalAnswer, setOriginalAnswer] = useState(null);
+  const [replacingStates, setReplacingStates] = useState({});
+  const [originalAnswers, setOriginalAnswers] = useState({});
+  const [selectedAssessmentFilter, setSelectedAssessmentFilter] = useState('all');
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
+
+  // Add these new state variables
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchStudents, setBatchStudents] = useState('');
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchResults, setBatchResults] = useState(null);
+  const [batchName, setBatchName] = useState('');
+  const [studentBatches, setStudentBatches] = useState([]);
 
   // Fetch assessments from Firestore
   const fetchAssessments = useCallback(async () => {
@@ -225,7 +233,7 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
         totalSubmissions += uniqueStudents.size;
       }
     });
-  const activeStudents = dbStudents.filter(student => student.isActive);
+    const activeStudents = dbStudents.filter(student => student.isActive);
 
     return {
       totalAssessments: assessments.length,
@@ -302,7 +310,29 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
       return;
     }
 
-    const assignedStudents = getSelectedStudents();
+    const assignedBatches = getSelectedBatches();
+    console.log("Selected batch IDs:", assignedBatches);
+    // Debug: Check all students and their batch IDs
+    console.log("All students with batch info:", dbStudents.map(s => ({
+      email: s.email,
+      batchId: s.batchId,
+      isActive: s.isActive
+    })));
+    // Get all students from selected batches
+    let assignedStudents = [];
+    if (assignedBatches.length > 0) {
+      // Filter students who belong to selected batches
+      assignedStudents = dbStudents
+        .filter(student => {
+          const isInBatch = student.isActive && student.batchId && assignedBatches.includes(student.batchId);
+          console.log(`Student ${student.email}: batchId=${student.batchId}, isActive=${student.isActive}, included=${isInBatch}`);
+          return isInBatch;
+        })
+        .map(student => student.email);
+    }
+    console.log("Final assigned students:", assignedStudents);
+    console.log(`Found ${assignedStudents.length} students in ${assignedBatches.length} batch(es)`);
+
     const assessment = {
       id: 'assessment_' + Date.now(),
       title,
@@ -311,9 +341,11 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
       endDate,
       maxScore: parseInt(maxScore) || 100,
       createdBy: currentUser.username,
-      assignedStudents: assignedStudents,
+      assignedBatches: assignedBatches,
+      assignedStudents: assignedStudents, // Now contains all students from selected batches
       questions: []
     };
+
 
 
     try {
@@ -337,7 +369,7 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
       if (assessmentTitleRef.current) assessmentTitleRef.current.value = "";
       if (assessmentDescriptionRef.current) assessmentDescriptionRef.current.value = "";
       if (maxScoreRef.current) maxScoreRef.current.value = "100";
-      clearStudentSelection();
+      clearBatchSelection();
       setSmartDefaults();
       fetchAssessments();
       setActivePreset(null);
@@ -418,7 +450,7 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
     const assessment = assessments.find((a) => a.firebaseId === assessmentId);
     if (assessment) {
       const currentTotalPoints = (assessment.questions || []).reduce(
-        (sum, q) => sum + (q.points || 0), 
+        (sum, q) => sum + (q.points || 0),
         0
       );
       const availablePoints = (assessment.maxScore || 0) - currentTotalPoints;
@@ -464,15 +496,15 @@ const [selectedStudentFilter, setSelectedStudentFilter] = useState('all');
 
     // ✅ Calculate current total points
     const currentTotalPoints = (assessment.questions || []).reduce(
-      (sum, q) => sum + (q.points || 0), 
+      (sum, q) => sum + (q.points || 0),
       0
     );
-    
+
     // ✅ Check if adding this question would exceed maxScore
     const newQuestionPoints = parseInt(points);
     const newTotalPoints = currentTotalPoints + newQuestionPoints;
     const maxScore = assessment.maxScore || 0;
-    
+
     if (newTotalPoints > maxScore) {
       alert(`Cannot add question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
       
@@ -650,7 +682,7 @@ Available points: ${maxScore - currentTotalPoints} points`);
     if (newPoints === null) return; // User cancelled
 
     const newInstructions = prompt("Edit instructions:", question.instructions || "");
-    
+
     const updatedData = {
       text: newText,
       points: parseInt(newPoints) || question.points,
@@ -662,9 +694,9 @@ Available points: ${maxScore - currentTotalPoints} points`);
     };
 
     editQuestion(firebaseId, question.id, updatedData);
-};
+  };
 
-const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
+  const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
     console.log("Editing question", firebaseId, questionId, updatedQuestionData);
     if (!firebaseId) {
       alert("Error: Missing firebaseId");
@@ -688,22 +720,22 @@ const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
 
       const oldPoints = oldQuestion.points || 0;
       const newPoints = updatedQuestionData.points || 0;
-      
+
       // Calculate current total points
       const currentTotalPoints = (assessment.questions || []).reduce(
-        (sum, q) => sum + (q.points || 0), 
+        (sum, q) => sum + (q.points || 0),
         0
       );
-      
+
       // Calculate what the new total would be after the edit
       const newTotalPoints = currentTotalPoints - oldPoints + newPoints;
       const maxScore = assessment.maxScore || 0;
-      
+
       // ✅ Check if the edit would exceed maxScore
       if (newTotalPoints > maxScore) {
         const pointChange = newPoints - oldPoints;
         const availablePoints = maxScore - currentTotalPoints + oldPoints;
-        
+
         alert(`Cannot update question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
         
 Current total: ${currentTotalPoints} points
@@ -745,7 +777,7 @@ Available points for this question: ${availablePoints} points`);
       console.error("Error updating question:", error);
       alert("Failed to update question. Please try again.");
     }
-};
+  };
   const activateAssessmentNow = async (assessmentId) => {
     console.log('firebase assessment id', assessmentId);
     // log all ids in state
@@ -756,16 +788,24 @@ Available points for this question: ${availablePoints} points`);
       return;
     }
 
-    const now = new Date();
+ const now = new Date();
+  const currentStart = new Date(assessment.startDate);
+  const currentEnd = new Date(assessment.endDate);
+
+  // Check if already active
+  if (now >= currentStart && now <= currentEnd) {
+    alert(`Assessment "${assessment.title}" is already active!`);
+    return;
+  }
 
 
     console.log("assessment status", assessment.status);
 
 
-    if (assessment.status === "scheduled") {
-      alert(`Assessment "${assessment.title}" is already scheduled!`);
-      return;
-    }
+    // if (assessment.status === "scheduled") {
+    //   alert(`Assessment "${assessment.title}" is already scheduled!`);
+    //   return;
+    // }
     // if (now >= currentStart && now <= currentEnd) {
     //   alert(`Assessment "${assessment.title}" is already active!`);
     //   return;
@@ -789,6 +829,7 @@ Available points for this question: ${availablePoints} points`);
         const assessmentRef = doc(db, "assessments", assessmentId);
         await updateDoc(assessmentRef, {
           startDate: newStartDate,
+           endDate: newEndDate, // Add this line
           status: "scheduled"
         });
         alert(`Assessment "${assessment.title}" is now scheduled!`);
@@ -830,6 +871,55 @@ Available points for this question: ${availablePoints} points`);
         }));
 
         alert(`Assessment "${assessment.title}" is now available to ALL students!`);
+      } catch (error) {
+        console.error("Error updating assessment:", error);
+        alert("Failed to update assessment. Please try again.");
+      }
+    }
+  };
+  const assignToAllBatches = async (assessmentFirebaseId) => {
+    console.log("assign to all batches");
+    const assessment = assessments.find(a => a.firebaseId === assessmentFirebaseId);
+    if (!assessment) {
+      alert('Error: Assessment not found!');
+      return;
+    }
+
+    if (window.confirm(`Make "${assessment.title}" available to ALL batches and their students?`)) {
+      try {
+        // Get all batch IDs
+        const allBatchIds = studentBatches.map(batch => batch.batchId);
+
+        // Get ONLY students who belong to batches
+        const studentsInBatches = dbStudents
+          .filter(student =>
+            student.isActive &&
+            student.batchId && // Must have a batch ID
+            allBatchIds.includes(student.batchId) // Must be in one of our batches
+          )
+          .map(student => student.email);
+
+        // Update Firestore
+        const assessmentRef = doc(db, "assessments", assessmentFirebaseId);
+        await updateDoc(assessmentRef, {
+          assignedBatches: allBatchIds,
+          assignedStudents: studentsInBatches, // Only students in batches
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update local state
+        setAssessments(prev => prev.map(a => {
+          if (a.firebaseId === assessmentFirebaseId) {
+            return {
+              ...a,
+              assignedBatches: allBatchIds,
+              assignedStudents: studentsInBatches
+            };
+          }
+          return a;
+        }));
+
+        alert(`Assessment "${assessment.title}" assigned to ${allBatchIds.length} batch(es) with ${studentsInBatches.length} students!\n(Students without batch assignment excluded)`);
       } catch (error) {
         console.error("Error updating assessment:", error);
         alert("Failed to update assessment. Please try again.");
@@ -1887,6 +1977,54 @@ Available points for this question: ${availablePoints} points`);
     );
   };
 
+
+
+  const toggleBatchSelection = (batchId) => {
+    const item = document.querySelector(`#batchAssignmentList [data-batch="${batchId}"]`);
+    if (item) {
+      item.classList.toggle('selected');
+      updateBatchSelectionSummary();
+    }
+  };
+
+  const updateBatchSelectionSummary = () => {
+    const selectedBatches = getSelectedBatches();
+    const summaryElement = document.getElementById('batchSelectionSummary');
+
+    if (summaryElement) {
+      if (selectedBatches.length === 0) {
+        summaryElement.textContent = 'No batches selected - assessment will be available to ALL batches';
+        summaryElement.style.color = '#28a745';
+      } else {
+        const batchNames = selectedBatches.map(id => {
+          const batch = studentBatches.find(b => b.batchId === id);
+          return batch ? batch.name : id;
+        });
+        summaryElement.textContent = `Selected: ${batchNames.join(', ')} (${selectedBatches.length} batch${selectedBatches.length > 1 ? 'es' : ''})`;
+        summaryElement.style.color = '#007bff';
+      }
+    }
+  };
+
+  const getSelectedBatches = () => {
+    const selectedItems = document.querySelectorAll('#batchAssignmentList .student-item.selected');
+    return Array.from(selectedItems).map(item => item.getAttribute('data-batch'));
+  };
+
+  const selectAllBatches = () => {
+    document.querySelectorAll('#batchAssignmentList .student-item').forEach(item => {
+      item.classList.add('selected');
+    });
+    updateBatchSelectionSummary();
+  };
+
+  const clearBatchSelection = () => {
+    document.querySelectorAll('#batchAssignmentList .student-item').forEach(item => {
+      item.classList.remove('selected');
+    });
+    updateBatchSelectionSummary();
+  };
+
   // Render Create Assessment Tab
   // Render Create Assessment Tab
   const renderCreateAssessment = () => {
@@ -1956,29 +2094,33 @@ Available points for this question: ${availablePoints} points`);
         </div>
 
         <div className="student-selection">
-          <label><strong>👥 Assign to Students:</strong></label>
+          <label><strong>📚 Assign to Batches:</strong></label>
           <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-            Select students who can take this assessment (leave none selected for ALL students)
+            Select batches that can take this assessment (leave none selected for ALL batches)
           </p>
 
-          <div className="student-list" id="studentAssignmentList">
-            {activeStudents.length === 0 ? (
-              <p style={{ color: 'red' }}>⚠️ No active students available</p>
+          <div className="student-list" id="batchAssignmentList">
+            {studentBatches.length === 0 ? (
+              <p style={{ color: 'red' }}>⚠️ No batches available</p>
             ) : (
-              activeStudents.map(student => (
+              studentBatches.filter(batch => batch.status === 'active').map(batch => (
                 <div
-                  key={student.id}
+                  key={batch.id}
                   className="student-item"
-                  data-student={student.email}
-                  onClick={() => toggleStudentSelection(student.email)}
+                  data-batch={batch.batchId}
+                  onClick={() => toggleBatchSelection(batch.batchId)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {student.fullName}
+                  <div style={{ fontWeight: '500' }}>{batch.name}</div>
+                  <div style={{ fontSize: '11px', color: '#666' }}>
+                    ID: {batch.batchId} | Students: {batch.totalStudents}
+                  </div>
                 </div>
               ))
             )}
           </div>
 
-          <div id="selectionSummary" style={{
+          <div id="batchSelectionSummary" style={{
             margin: '10px 0',
             padding: '8px',
             background: '#f8f9fa',
@@ -1986,14 +2128,14 @@ Available points for this question: ${availablePoints} points`);
             fontSize: '12px',
             fontWeight: 'bold'
           }}>
-            No students selected - assessment will be available to ALL students
+            No batches selected - assessment will be available to ALL batches
           </div>
 
           <div style={{ marginTop: '10px' }}>
-            <button type="button" className="btn btn-secondary" onClick={selectAllStudents}>
-              Select All
+            <button type="button" className="btn btn-secondary" onClick={selectAllBatches}>
+              Select All Batches
             </button>
-            <button type="button" className="btn btn-secondary" onClick={clearStudentSelection}>
+            <button type="button" className="btn btn-secondary" onClick={clearBatchSelection}>
               Clear All
             </button>
           </div>
@@ -2018,12 +2160,28 @@ Available points for this question: ${availablePoints} points`);
     }
   }, []);
 
+  const fetchBatches = useCallback(async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "batches"));
+      const batchesList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setStudentBatches(batchesList);
+      console.log("Fetched batches from database:", batchesList);
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    }
+  }, []);
   // Call fetchStudents when admin dashboard loads
   useEffect(() => {
     if (currentUser?.role === 'admin') {
       fetchStudents();
+      fetchBatches(); // Add this
+
     }
-  }, [currentUser, fetchStudents]);
+  }, [currentUser, fetchStudents, fetchBatches]);
+
 
   // Add student by email search
   const addStudentByEmail = async () => {
@@ -2099,12 +2257,286 @@ Available points for this question: ${availablePoints} points`);
       alert(`Failed to ${action} student`);
     }
   };
+
+  const createBatch = async () => {
+    if (!batchName.trim()) {
+      alert('Please enter a batch name');
+      return;
+    }
+
+    setBatchProcessing(true);
+
+    try {
+      // Check if batch name already exists
+      const batchCheckQuery = query(
+        collection(db, "batches"),
+        where("name", "==", batchName)
+      );
+      const batchCheckSnapshot = await getDocs(batchCheckQuery);
+
+      if (!batchCheckSnapshot.empty) {
+        alert(`A batch with the name "${batchName}" already exists. Please choose a different name.`);
+        setBatchProcessing(false);
+        return;
+      }
+      // Auto-generate unique batch ID
+      const year = new Date().getFullYear();
+      const month = String(new Date().getMonth() + 1).padStart(2, '0');
+      const timestamp = Date.now();
+      const uniqueBatchId = `BATCH-${year}${month}-${timestamp}`;
+
+      // Create the batch record
+      const batchData = {
+        batchId: uniqueBatchId,  // Auto-generated unique ID
+
+        name: batchName,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.email,
+        totalStudents: 0,
+        activeStudents: 0,
+        status: 'active',
+        studentIds: []
+      };
+
+      const batchRef = await addDoc(collection(db, "batches"), batchData);
+      console.log("Batch created with ID:", batchRef.id);
+
+      await fetchBatches();
+
+      alert(`Batch "${batchName}" created successfully!`);
+      setShowBatchModal(false);
+      setBatchName('');
+
+    } catch (error) {
+      console.error('Batch creation error:', error);
+      alert('Error creating batch: ' + error.message);
+    } finally {
+      setBatchProcessing(false);
+    }
+  };
+  const renderBatchCreationModal = () => {
+    if (!showBatchModal) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(0,0,0,0.8)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '30px',
+          borderRadius: '15px',
+          width: '90%',
+          maxWidth: '500px'
+        }}>
+          <h3>📚 Create Student Batch</h3>
+
+          <div className="form-group">
+            <label>Batch Name:</label>
+            <input
+              type="text"
+              value={batchName}
+              onChange={(e) => setBatchName(e.target.value)}
+              placeholder="e.g., Batch 2025-A, Computer Science 2024"
+              disabled={batchProcessing}
+            />
+          </div>
+
+          <div style={{ textAlign: 'right', marginTop: '20px' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setShowBatchModal(false);
+                setBatchName('');
+              }}
+              disabled={batchProcessing}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn"
+              onClick={createBatch}
+              disabled={batchProcessing || !batchName.trim()}
+              style={{ marginLeft: '10px' }}
+            >
+              {batchProcessing ? 'Creating...' : 'Create Batch'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Simplified openBatchModal - no prompt, just opens modal
+  const openBatchModal = () => {
+    setBatchName('');
+    setShowBatchModal(true);
+  };
+  // Also update the Edit Name button in the modal to check for duplicates
+
+
+  // Also add double-check in createStudentBatch function as a safety measure
+  const createStudentBatch = async () => {
+    if (!batchName.trim()) {
+      alert('Please enter a batch name');
+      return;
+    }
+
+    if (!batchStudents.trim()) {
+      alert('Please enter student details');
+      return;
+    }
+
+    setBatchProcessing(true);
+    const results = { success: [], failed: [] };
+
+    try {
+      // Double-check batch name doesn't exist
+      const batchCheckQuery = query(
+        collection(db, "batches"),
+        where("name", "==", batchName)
+      );
+      const batchCheckSnapshot = await getDocs(batchCheckQuery);
+
+      if (!batchCheckSnapshot.empty) {
+        alert(`❌ A batch with the name "${batchName}" already exists. Please choose a different name.`);
+        setBatchProcessing(false);
+        return;
+      }
+
+      // Create the batch record
+      const batchData = {
+        name: batchName,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.email,
+        totalStudents: 0,
+        activeStudents: 0,
+        status: 'active'
+      };
+
+      const batchRef = await addDoc(collection(db, "batches"), batchData);
+      console.log("Batch created with ID:", batchRef.id);
+
+      // Rest of the function remains the same...
+      const lines = batchStudents.split('\n').filter(line => line.trim());
+
+      for (const line of lines) {
+        const parts = line.split(',').map(part => part.trim());
+
+        if (parts.length < 3) {
+          results.failed.push({
+            line: line,
+            error: 'Invalid format. Expected: firstName,lastName,email'
+          });
+          continue;
+        }
+
+        const [firstName, lastName, email] = parts;
+
+        if (!email.includes('@')) {
+          results.failed.push({
+            line: line,
+            error: 'Invalid email address'
+          });
+          continue;
+        }
+
+        try {
+          const studentQuery = query(
+            collection(db, "students"),
+            where("email", "==", email.toLowerCase())
+          );
+          const querySnapshot = await getDocs(studentQuery);
+
+          if (!querySnapshot.empty) {
+            results.failed.push({
+              line: line,
+              error: 'Student already exists'
+            });
+            continue;
+          }
+
+          const defaultPassword = `${firstName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+
+          const studentData = {
+            firstName: firstName,
+            lastName: lastName,
+            fullName: `${firstName} ${lastName}`,
+            email: email.toLowerCase(),
+            password: defaultPassword,
+            role: 'student',
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            registrationDate: new Date().toISOString(),
+            batchId: batchRef.id,
+            batchName: batchName,
+            createdBy: currentUser.email
+          };
+
+          const docRef = await addDoc(collection(db, "students"), studentData);
+
+          results.success.push({
+            name: `${firstName} ${lastName}`,
+            email: email,
+            password: defaultPassword,
+            id: docRef.id
+          });
+
+        } catch (error) {
+          results.failed.push({
+            line: line,
+            error: error.message
+          });
+        }
+      }
+
+      await updateDoc(doc(db, "batches", batchRef.id), {
+        totalStudents: results.success.length,
+        activeStudents: results.success.length,
+        studentIds: results.success.map(s => s.id)
+      });
+
+      await fetchStudents();
+      await fetchBatches();
+
+      setBatchResults(results);
+
+      if (results.failed.length === 0) {
+        setBatchStudents('');
+        setBatchName('');
+      }
+
+    } catch (error) {
+      console.error('Batch creation error:', error);
+      alert('Error processing batch: ' + error.message);
+    } finally {
+      setBatchProcessing(false);
+    }
+  };
+
   // Render Manage Students Tab
   // Updated renderManageStudents function
   const renderManageStudents = () => (
     <div>
       <h3>Manage Students</h3>
-
+      {/* Create Student Batch Button */}
+      <button
+        className="btn"
+        onClick={() => openBatchModal()}
+        style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        }}
+      >
+        📚 Create Student Batch
+      </button>
       {/* Search and Add Student */}
       <div className="form-group">
         <label htmlFor="studentSearch">Add Student by Email:</label>
@@ -2252,7 +2684,21 @@ Available points for this question: ${availablePoints} points`);
     return activeStudentUsernames.length === assignedUsernames.length &&
       activeStudentUsernames.every(username => assignedUsernames.includes(username));
   };
+const isAssignedToAllBatches = (assignedBatches, allBatches) => {
+  // If no batches assigned, it means all batches
+  if (!assignedBatches || assignedBatches.length === 0) {
+    return true;
+  }
+  
+  // If assigned batches equals total batches, it's assigned to all
+  if (assignedBatches.length === allBatches.length) {
+    return true;
+  }
+  
+  return false;
+};
 
+// Update your code to use this function
   // Helper function to display student names properly
   const getDisplayStudentNames = (assignedStudents, dbStudents) => {
     if (!assignedStudents || assignedStudents.length === 0) {
@@ -2293,7 +2739,7 @@ Available points for this question: ${availablePoints} points`);
           }
 
           // Use the helper function to check if assigned to all students
-          const isAssignedToAll = isAssignedToAllStudents(assessment.assignedStudents, dbStudents);
+const isAssignedToAll = isAssignedToAllBatches(assessment.assignedBatches, studentBatches);
           const displayNames = getDisplayStudentNames(assessment.assignedStudents, dbStudents);
 
           return (
@@ -2308,12 +2754,31 @@ Available points for this question: ${availablePoints} points`);
                 <strong>Max Score:</strong> {assessment.maxScore} points<br />
                 <strong>Questions:</strong> {assessment.questions ? assessment.questions.length : 0}<br />
                 <strong>Assigned to:</strong> {
-                  isAssignedToAll
-                    ? <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL STUDENTS</span>
-                    : displayNames.length > 0
-                      ? displayNames.join(', ') // 👈 SHOWS USERNAMES INSTEAD OF EMAILS
-                      : <span style={{ color: '#dc3545', fontWeight: 'bold' }}>NO STUDENTS ASSIGNED</span>
-                }
+    isAssignedToAll
+      ? (
+          <>
+            <span style={{ color: '#28a745', fontWeight: 'bold' }}>ALL BATCHES</span>
+            <span style={{ fontSize: '11px', color: '#666' }}>
+              {' '}({dbStudents.filter(s => s.isActive && s.batchId).length} students)
+            </span>
+          </>
+        )
+      : assessment.assignedBatches?.length > 0
+        ? (
+            <>
+              {assessment.assignedBatches.map(batchId => {
+                const batch = studentBatches.find(b => b.batchId === batchId);
+                return batch ? batch.name : batchId;
+              }).join(', ')}
+              {assessment.assignedStudents && (
+                <span style={{ fontSize: '11px', color: '#666' }}>
+                  {' '}({assessment.assignedStudents.length} students)
+                </span>
+              )}
+            </>
+          )
+        : <span style={{ color: '#dc3545', fontWeight: 'bold' }}>NO BATCHES ASSIGNED</span>
+  }
               </div>
               <div style={{ marginTop: '15px' }}>
                 <button
@@ -2338,14 +2803,14 @@ Available points for this question: ${availablePoints} points`);
                   <button
                     className="btn btn-success"
                   >
-                    Assign to All
+                    Assigned to All
                   </button>
                 ) : (
                   <button
                     className="btn btn-success"
-                    onClick={() => assignToAllStudents(assessment.firebaseId)}
+                    onClick={() => assignToAllBatches(assessment.firebaseId)}
                   >
-                    Assign to All Students
+                    Assign to All Batches
                   </button>
                 )}
                 <button
@@ -2363,328 +2828,328 @@ Available points for this question: ${availablePoints} points`);
   );
 
   // Render Grade Submissions Tab
-const renderGradeSubmissions = () => {
-  const allSubmissions = extractAllSubmissionsFromAssessments();
+  const renderGradeSubmissions = () => {
+    const allSubmissions = extractAllSubmissionsFromAssessments();
 
-  return (
-    <div>
-      <h3>Grade Submissions</h3>
+    return (
+      <div>
+        <h3>Grade Submissions</h3>
 
-      {/* Summary Statistics */}
-      {allSubmissions.length > 0 && (
-        <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
-          <strong>Summary:</strong> {allSubmissions.length} total submissions | {allSubmissions.filter(s => s.graded).length} graded | {allSubmissions.filter(s => !s.graded).length} pending
-        </div>
-      )}
+        {/* Summary Statistics */}
+        {allSubmissions.length > 0 && (
+          <div className="stats-summary" style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '5px' }}>
+            <strong>Summary:</strong> {allSubmissions.length} total submissions | {allSubmissions.filter(s => s.graded).length} graded | {allSubmissions.filter(s => !s.graded).length} pending
+          </div>
+        )}
 
-      {/* No Submissions State */}
-      {allSubmissions.length === 0 ? (
-        <div className="question-card">
-          <h4>No Submissions Found</h4>
-          <p>There are currently no student submissions in the system.</p>
-        </div>
-      ) : (
-        /* Submissions List */
-        <div className="submissions-container">
-          {allSubmissions.map(submission => {
-            // Find assessment using firebaseAssessmentId
-            const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+        {/* No Submissions State */}
+        {allSubmissions.length === 0 ? (
+          <div className="question-card">
+            <h4>No Submissions Found</h4>
+            <p>There are currently no student submissions in the system.</p>
+          </div>
+        ) : (
+          /* Submissions List */
+          <div className="submissions-container">
+            {allSubmissions.map(submission => {
+              // Find assessment using firebaseAssessmentId
+              const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
 
-            // Skip if assessment not found
-            if (!assessment) {
-              console.warn(`Assessment not found for submission ${submission.id}`);
-              return null;
-            }
+              // Skip if assessment not found
+              if (!assessment) {
+                console.warn(`Assessment not found for submission ${submission.id}`);
+                return null;
+              }
 
-            // Safely count answers
-            const answerCount = countAnswers(submission.answers);
-            const isGraded = submission.graded;
-            const submissionDate = new Date(submission.submittedAt);
+              // Safely count answers
+              const answerCount = countAnswers(submission.answers);
+              const isGraded = submission.graded;
+              const submissionDate = new Date(submission.submittedAt);
 
-            return (
-              <div key={submission.id} className="question-card">
-                {/* Header Section */}
-                <div className="question-header">
-                  <h4>📋 {assessment.title} - {submission.studentName}</h4>
-                  <span className={`status-badge ${isGraded ? 'status-open' : 'status-pending'}`}>
-                    {isGraded ? 'Graded' : 'Pending'}
-                  </span>
-                </div>
-
-                {/* Submission Details */}
-                <div className="question-meta">
-                  <div><strong>Student Email:</strong> {submission.studentId}</div>
-                  <div><strong>Submitted:</strong> {submissionDate.toLocaleString()}</div>
-                  <div><strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}</div>
-                  <div><strong>Questions Answered:</strong> {answerCount} out of {assessment.questions?.length || 0}</div>
-                  <div><strong>Total Score:</strong> {submission.totalScore || 0} / {assessment.maxScore}</div>
-
-                  {submission.submissionNotes && (
-                    <div><strong>Notes:</strong> {submission.submissionNotes}</div>
-                  )}
-                </div>
-
-                {/* Time Information */}
-                {submission.timeSpent && (
-                  <div className="time-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
-                    <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
+              return (
+                <div key={submission.id} className="question-card">
+                  {/* Header Section */}
+                  <div className="question-header">
+                    <h4>📋 {assessment.title} - {submission.studentName}</h4>
+                    <span className={`status-badge ${isGraded ? 'status-open' : 'status-pending'}`}>
+                      {isGraded ? 'Graded' : 'Pending'}
+                    </span>
                   </div>
-                )}
 
-                {/* Action Section */}
-                <div style={{ marginTop: '15px' }}>
-                  {!isGraded ? (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => gradeSubmission(submission.id)}
-                    >
-                      Grade Submission ({answerCount} questions)
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <div style={{
-                        padding: '8px 12px',
-                        backgroundColor: '#d4edda',
-                        border: '1px solid #c3e6cb',
-                        borderRadius: '4px',
-                        color: '#155724',
-                        fontSize: '14px',
-                        fontWeight: 'bold'
-                      }}>
-                        ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
+                  {/* Submission Details */}
+                  <div className="question-meta">
+                    <div><strong>Student Email:</strong> {submission.studentId}</div>
+                    <div><strong>Submitted:</strong> {submissionDate.toLocaleString()}</div>
+                    <div><strong>Status:</strong> {submission.isDraft ? 'Draft' : 'Final Submission'}</div>
+                    <div><strong>Questions Answered:</strong> {answerCount} out of {assessment.questions?.length || 0}</div>
+                    <div><strong>Total Score:</strong> {submission.totalScore || 0} / {assessment.maxScore}</div>
+
+                    {submission.submissionNotes && (
+                      <div><strong>Notes:</strong> {submission.submissionNotes}</div>
+                    )}
+                  </div>
+
+                  {/* Time Information */}
+                  {submission.timeSpent && (
+                    <div className="time-info" style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+                      <strong>Time Spent:</strong> {Math.round(submission.timeSpent / 60)} minutes
+                    </div>
+                  )}
+
+                  {/* Action Section */}
+                  <div style={{ marginTop: '15px' }}>
+                    {!isGraded ? (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => gradeSubmission(submission.id)}
+                      >
+                        Grade Submission ({answerCount} questions)
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div style={{
+                          padding: '8px 12px',
+                          backgroundColor: '#d4edda',
+                          border: '1px solid #c3e6cb',
+                          borderRadius: '4px',
+                          color: '#155724',
+                          fontSize: '14px',
+                          fontWeight: 'bold'
+                        }}>
+                          ✅ Graded: {submission.totalScore}/{assessment.maxScore} points ({((submission.totalScore / assessment.maxScore) * 100).toFixed(1)}%)
+                        </div>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Grade Display for Completed Submissions */}
+                  {isGraded && submission.feedback && (
+                    <div className="grade-feedback" style={{
+                      marginTop: '15px',
+                      padding: '10px',
+                      backgroundColor: '#e8f5e8',
+                      borderRadius: '5px',
+                      borderLeft: '4px solid #28a745'
+                    }}>
+                      <strong>Feedback:</strong>
+                      <div style={{ marginTop: '5px' }}>{submission.feedback}</div>
                     </div>
                   )}
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+  // Render View Results Tab
+  // Render View Results Tab
+  //   const renderViewResults = () => {
+  //     const allSubmissions = extractAllSubmissionsFromAssessments();
+  //     const gradedSubmissions = allSubmissions.filter(s => s.graded);
+  // // Apply filters to graded submissions
+  //   const filteredGradedSubmissions = gradedSubmissions.filter(s => {
+  //     const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
+  //     const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
+  //     return matchesAssessment && matchesStudent;
+  //   });
 
-                {/* Grade Display for Completed Submissions */}
-                {isGraded && submission.feedback && (
-                  <div className="grade-feedback" style={{
+  //     return (
+  //       <div>
+  //         <h3>Assessment Results</h3>
+
+  //         {gradedSubmissions.length === 0 ? (
+  //           <p>No graded submissions yet.</p>
+  //         ) : (
+  //           gradedSubmissions.map(submission => {
+  //             const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+  //             if (!assessment) return null;
+
+  //             // Use totalScore instead of submission.score
+  //             const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+
+  //             return (
+  //               <div key={submission.id} className="question-card">
+  //                 <div className="question-header">
+  //                   <h4>📊 {assessment.title} - {submission.studentName}</h4>
+  //                   <span className="status-badge status-open">{percentage}%</span>
+  //                 </div>
+  //                 <div className="question-meta">
+  //                   <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
+  //                   <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+  //                   <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+
+  //                   {/* Optional: Show question breakdown
+  //                 {Object.keys(submission.questionScores).length > 0 && (
+  //                   <div style={{ marginTop: '10px' }}>
+  //                     <strong>Question Breakdown:</strong>
+  //                     <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
+  //                       {Object.entries(submission.questionScores).map(([questionId, score]) => (
+  //                         <div key={questionId}>Question {questionId}: {score} points</div>
+  //                       ))}
+  //                     </div>
+  //                   </div>
+  //                 )} */}
+  //                 </div>
+  //               </div>
+  //             );
+  //           })
+  //         )}
+  //       </div>
+  //     );
+  //   };
+  const renderViewResults = () => {
+    const allSubmissions = extractAllSubmissionsFromAssessments();
+    const gradedSubmissions = allSubmissions.filter(s => s.graded);
+
+    // Apply filters to graded submissions
+    const filteredGradedSubmissions = gradedSubmissions.filter(s => {
+      const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
+      const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
+      return matchesAssessment && matchesStudent;
+    });
+
+    return (
+      <div>
+        {/* Header with filters */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3>Assessment Results</h3>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <select
+              value={selectedAssessmentFilter || 'all'}
+              onChange={(e) => setSelectedAssessmentFilter(e.target.value)}
+              style={{
+                padding: '8px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="all">All Assessments</option>
+              {assessments.map(assessment => (
+                <option key={assessment.firebaseId} value={assessment.firebaseId}>
+                  {assessment.title}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedStudentFilter || 'all'}
+              onChange={(e) => setSelectedStudentFilter(e.target.value)}
+              style={{
+                padding: '8px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="all">All Students</option>
+              {dbStudents.map(student => {
+                const studentName = student.name || student.fullName || student.displayName || student.firstName || student.studentName || student.email;
+                return (
+                  <option key={student.email || student.id} value={student.email}>
+                    {studentName === student.email ? student.email : `${studentName} (${student.email})`}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {/* Summary Statistics */}
+        {filteredGradedSubmissions.length > 0 && (
+          <div className="stats-summary" style={{
+            marginBottom: '20px',
+            padding: '15px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '5px',
+            border: '1px solid #dee2e6'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong>Results Summary:</strong> {filteredGradedSubmissions.length} graded submission(s)
+              </div>
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                {allSubmissions.filter(s => !s.graded).length > 0 && (
+                  <span>({allSubmissions.filter(s => !s.graded).length} pending grading)</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Results State */}
+        {filteredGradedSubmissions.length === 0 ? (
+          <div className="question-card">
+            <h4>No Results Found</h4>
+            <p>
+              {selectedAssessmentFilter !== 'all' || selectedStudentFilter !== 'all'
+                ? 'No graded submissions match your filter criteria.'
+                : 'No graded submissions yet.'}
+            </p>
+            {allSubmissions.filter(s => !s.graded).length > 0 && (
+              <p style={{ color: '#666' }}>
+                There are {allSubmissions.filter(s => !s.graded).length} submission(s) pending grading.
+              </p>
+            )}
+          </div>
+        ) : (
+          /* Results List */
+          filteredGradedSubmissions.map(submission => {
+            const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
+            if (!assessment) return null;
+
+            const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
+
+            // Determine grade level for color coding
+            let gradeLevel = 'status-pending';
+            if (parseFloat(percentage) >= 80) gradeLevel = 'status-open';
+            else if (parseFloat(percentage) >= 60) gradeLevel = 'status-pending';
+            else gradeLevel = 'status-closed';
+
+            return (
+              <div key={submission.id} className="question-card">
+                <div className="question-header">
+                  <h4>📊 {assessment.title} - {submission.studentName}</h4>
+                  <span className={`status-badge ${gradeLevel}`}>{percentage}%</span>
+                </div>
+                <div className="question-meta">
+                  <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore} points<br />
+                  {/* <strong>Questions Answered:</strong> {submission.questionsAnswered || Object.keys(submission.answers || {}).length}<br /> */}
+                  <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
+                  <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
+                </div>
+
+                {/* Grade breakdown if available */}
+                {submission.questionScores && Object.keys(submission.questionScores).length > 0 && (
+                  <div style={{
                     marginTop: '15px',
                     padding: '10px',
                     backgroundColor: '#e8f5e8',
                     borderRadius: '5px',
                     borderLeft: '4px solid #28a745'
                   }}>
-                    <strong>Feedback:</strong>
-                    <div style={{ marginTop: '5px' }}>{submission.feedback}</div>
+                    <strong>Question Scores:</strong>
+                    <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
+                      {Object.entries(submission.questionScores).map(([questionId, score], index) => {
+                        const question = assessment.questions?.find(q => q.id === questionId);
+                        const maxScore = question?.points || 0;
+                        return (
+                          <div key={questionId} style={{
+                            padding: '5px 8px',
+                            backgroundColor: 'white',
+                            borderRadius: '4px',
+                            border: '1px solid #dee2e6',
+                            fontSize: '12px'
+                          }}>
+                            <strong>Q{index + 1}:</strong> {score}/{maxScore}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-  // Render View Results Tab
-  // Render View Results Tab
-//   const renderViewResults = () => {
-//     const allSubmissions = extractAllSubmissionsFromAssessments();
-//     const gradedSubmissions = allSubmissions.filter(s => s.graded);
-// // Apply filters to graded submissions
-//   const filteredGradedSubmissions = gradedSubmissions.filter(s => {
-//     const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
-//     const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
-//     return matchesAssessment && matchesStudent;
-//   });
 
-//     return (
-//       <div>
-//         <h3>Assessment Results</h3>
-
-//         {gradedSubmissions.length === 0 ? (
-//           <p>No graded submissions yet.</p>
-//         ) : (
-//           gradedSubmissions.map(submission => {
-//             const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-//             if (!assessment) return null;
-
-//             // Use totalScore instead of submission.score
-//             const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
-
-//             return (
-//               <div key={submission.id} className="question-card">
-//                 <div className="question-header">
-//                   <h4>📊 {assessment.title} - {submission.studentName}</h4>
-//                   <span className="status-badge status-open">{percentage}%</span>
-//                 </div>
-//                 <div className="question-meta">
-//                   <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore}<br />
-//                   <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-//                   <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
-
-//                   {/* Optional: Show question breakdown
-//                 {Object.keys(submission.questionScores).length > 0 && (
-//                   <div style={{ marginTop: '10px' }}>
-//                     <strong>Question Breakdown:</strong>
-//                     <div style={{ marginLeft: '10px', fontSize: '14px', color: '#666' }}>
-//                       {Object.entries(submission.questionScores).map(([questionId, score]) => (
-//                         <div key={questionId}>Question {questionId}: {score} points</div>
-//                       ))}
-//                     </div>
-//                   </div>
-//                 )} */}
-//                 </div>
-//               </div>
-//             );
-//           })
-//         )}
-//       </div>
-//     );
-//   };
-const renderViewResults = () => {
-  const allSubmissions = extractAllSubmissionsFromAssessments();
-  const gradedSubmissions = allSubmissions.filter(s => s.graded);
-  
-  // Apply filters to graded submissions
-  const filteredGradedSubmissions = gradedSubmissions.filter(s => {
-    const matchesAssessment = selectedAssessmentFilter === 'all' || s.firebaseAssessmentId === selectedAssessmentFilter;
-    const matchesStudent = selectedStudentFilter === 'all' || s.studentId === selectedStudentFilter;
-    return matchesAssessment && matchesStudent;
-  });
-
-  return (
-    <div>
-      {/* Header with filters */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h3>Assessment Results</h3>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <select 
-            value={selectedAssessmentFilter || 'all'}
-            onChange={(e) => setSelectedAssessmentFilter(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '5px',
-              border: '1px solid #ddd'
-            }}
-          >
-            <option value="all">All Assessments</option>
-            {assessments.map(assessment => (
-              <option key={assessment.firebaseId} value={assessment.firebaseId}>
-                {assessment.title}
-              </option>
-            ))}
-          </select>
-          
-          <select 
-            value={selectedStudentFilter || 'all'}
-            onChange={(e) => setSelectedStudentFilter(e.target.value)}
-            style={{
-              padding: '8px',
-              borderRadius: '5px',
-              border: '1px solid #ddd'
-            }}
-          >
-            <option value="all">All Students</option>
-            {dbStudents.map(student => {
-              const studentName = student.name || student.fullName || student.displayName || student.firstName || student.studentName || student.email;
-              return (
-                <option key={student.email || student.id} value={student.email}>
-                  {studentName === student.email ? student.email : `${studentName} (${student.email})`}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      </div>
-
-      {/* Summary Statistics */}
-      {filteredGradedSubmissions.length > 0 && (
-        <div className="stats-summary" style={{ 
-          marginBottom: '20px', 
-          padding: '15px', 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: '5px',
-          border: '1px solid #dee2e6'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <strong>Results Summary:</strong> {filteredGradedSubmissions.length} graded submission(s)
-            </div>
-            <div style={{ fontSize: '14px', color: '#666' }}>
-              {allSubmissions.filter(s => !s.graded).length > 0 && (
-                <span>({allSubmissions.filter(s => !s.graded).length} pending grading)</span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* No Results State */}
-      {filteredGradedSubmissions.length === 0 ? (
-        <div className="question-card">
-          <h4>No Results Found</h4>
-          <p>
-            {selectedAssessmentFilter !== 'all' || selectedStudentFilter !== 'all' 
-              ? 'No graded submissions match your filter criteria.' 
-              : 'No graded submissions yet.'}
-          </p>
-          {allSubmissions.filter(s => !s.graded).length > 0 && (
-            <p style={{ color: '#666' }}>
-              There are {allSubmissions.filter(s => !s.graded).length} submission(s) pending grading.
-            </p>
-          )}
-        </div>
-      ) : (
-        /* Results List */
-        filteredGradedSubmissions.map(submission => {
-          const assessment = assessments.find(a => a.firebaseId === submission.firebaseAssessmentId);
-          if (!assessment) return null;
-
-          const percentage = ((submission.totalScore / assessment.maxScore) * 100).toFixed(1);
-          
-          // Determine grade level for color coding
-          let gradeLevel = 'status-pending';
-          if (parseFloat(percentage) >= 80) gradeLevel = 'status-open';
-          else if (parseFloat(percentage) >= 60) gradeLevel = 'status-pending';
-          else gradeLevel = 'status-closed';
-
-          return (
-            <div key={submission.id} className="question-card">
-              <div className="question-header">
-                <h4>📊 {assessment.title} - {submission.studentName}</h4>
-                <span className={`status-badge ${gradeLevel}`}>{percentage}%</span>
-              </div>
-              <div className="question-meta">
-                <strong>Score:</strong> {submission.totalScore} / {assessment.maxScore} points<br />
-                {/* <strong>Questions Answered:</strong> {submission.questionsAnswered || Object.keys(submission.answers || {}).length}<br /> */}
-                <strong>Submitted:</strong> {new Date(submission.submittedAt).toLocaleString()}<br />
-                <strong>Graded:</strong> {new Date(submission.gradedAt).toLocaleString()}
-              </div>
-
-              {/* Grade breakdown if available */}
-              {submission.questionScores && Object.keys(submission.questionScores).length > 0 && (
-                <div style={{ 
-                  marginTop: '15px', 
-                  padding: '10px', 
-                  backgroundColor: '#e8f5e8', 
-                  borderRadius: '5px',
-                  borderLeft: '4px solid #28a745' 
-                }}>
-                  <strong>Question Scores:</strong>
-                  <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
-                    {Object.entries(submission.questionScores).map(([questionId, score], index) => {
-                      const question = assessment.questions?.find(q => q.id === questionId);
-                      const maxScore = question?.points || 0;
-                      return (
-                        <div key={questionId} style={{ 
-                          padding: '5px 8px', 
-                          backgroundColor: 'white', 
-                          borderRadius: '4px',
-                          border: '1px solid #dee2e6',
-                          fontSize: '12px'
-                        }}>
-                          <strong>Q{index + 1}:</strong> {score}/{maxScore}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Performance Badge
+                {/* Performance Badge
               <div style={{ marginTop: '15px', textAlign: 'center' }}>
                 <div style={{
                   display: 'inline-block',
@@ -2701,13 +3166,13 @@ const renderViewResults = () => {
                    '📚 Keep Practicing!'}
                 </div>
               </div> */}
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
-};
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   // Render Student Dashboard
   const renderStudentDashboard = () => (
@@ -3494,9 +3959,9 @@ const renderViewResults = () => {
 
       // Priority 2: Check current assessmentAnswers (for active editing)
       const fieldKey = `${questionId}_${answerType}`;
-if (fieldKey in assessmentAnswers) {
-    return assessmentAnswers[fieldKey]; // This could be null, which is intentional
-  }
+      if (fieldKey in assessmentAnswers) {
+        return assessmentAnswers[fieldKey]; // This could be null, which is intentional
+      }
 
       // if (assessmentAnswers[fieldKey]) {
       //   return assessmentAnswers[fieldKey];
@@ -3659,196 +4124,196 @@ if (fieldKey in assessmentAnswers) {
                               )
                             ) : (
 
-                           <div>
-  {/* Show previous submitted answer if exists AND not in replacing mode */}
-  {studentAnswer && !replacingStates[fieldKey] ? (
-    typeof studentAnswer === 'object' && studentAnswer.base64 ? (
-      <div style={{
-        background: '#f8f9fa',
-        padding: '15px',
-        borderRadius: '8px',
-        border: '1px solid #dee2e6',
-        marginBottom: '10px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <div>
-            <strong>📎 {studentAnswer.name}</strong><br />
-            <small style={{ color: '#6c757d' }}>
-              {(studentAnswer.size / 1024).toFixed(1)}KB • {studentAnswer.type}
-            </small>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className="btn btn-secondary"
-              style={{ fontSize: '12px', padding: '4px 8px' }}
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = studentAnswer.base64;
-                link.download = studentAnswer.name;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-            >
-              ⬇️ Download
-            </button>
+                              <div>
+                                {/* Show previous submitted answer if exists AND not in replacing mode */}
+                                {studentAnswer && !replacingStates[fieldKey] ? (
+                                  typeof studentAnswer === 'object' && studentAnswer.base64 ? (
+                                    <div style={{
+                                      background: '#f8f9fa',
+                                      padding: '15px',
+                                      borderRadius: '8px',
+                                      border: '1px solid #dee2e6',
+                                      marginBottom: '10px'
+                                    }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                        <div>
+                                          <strong>📎 {studentAnswer.name}</strong><br />
+                                          <small style={{ color: '#6c757d' }}>
+                                            {(studentAnswer.size / 1024).toFixed(1)}KB • {studentAnswer.type}
+                                          </small>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                          <button
+                                            className="btn btn-secondary"
+                                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                                            onClick={() => {
+                                              const link = document.createElement('a');
+                                              link.href = studentAnswer.base64;
+                                              link.download = studentAnswer.name;
+                                              document.body.appendChild(link);
+                                              link.click();
+                                              document.body.removeChild(link);
+                                            }}
+                                          >
+                                            ⬇️ Download
+                                          </button>
 
-            {/* Replace option */}
-            <button
-              className="btn btn-primary"
-              style={{ fontSize: '12px', padding: '4px 8px' }}
-              onClick={() => {
-                setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
-                setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
-                handleAnswerChange(fieldKey, null);
-              }}
-            >
-              🔄 Replace
-            </button>
-          </div>
-        </div>
-        {studentAnswer.type.startsWith('image/') && (
-          <img
-            src={studentAnswer.base64}
-            alt={studentAnswer.name}
-            style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
-          />
-        )}
-      </div>
-    ) : (
-      // Handle string type studentAnswer
-      <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
-        📎 {studentAnswer}
-        <button
-          className="btn btn-primary"
-          style={{ fontSize: '12px', padding: '2px 6px', marginLeft: '10px' }}
-          onClick={() => {
-            setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
-            setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
-            handleAnswerChange(fieldKey, null);
-          }}
-        >
-          🔄 Replace
-        </button>
-      </div>
-    )
-  ) : (
-    // Show file upload component when no answer OR when replacing
-    <div>
-      {replacingStates[fieldKey] && (
-        <div style={{ marginBottom: '10px' }}>
-          {/* Show original file info when replacing */}
-          
-          
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              setReplacingStates(prev => ({ ...prev, [fieldKey]: false }));
-              // Restore the original answer
-              handleAnswerChange(fieldKey, originalAnswers[fieldKey]);
-              setOriginalAnswers(prev => {
-                const newState = { ...prev };
-                delete newState[fieldKey];
-                return newState;
-              });
-            }}
-            style={{ marginBottom: '10px' }}
-          >
-            ← Cancel Replace
-          </button>
-        </div>
-      )}
-      
-      {/* File Upload Component */}
-      <FileUploadWithBase64
-        onFileConverted={(fileData) => {
-          handleAnswerChange(fieldKey, fileData);
-          // Don't reset replacing state immediately - let user see the preview first
-        }}
-        currentValue={assessmentAnswers[fieldKey]}
-        maxSize={5 * 1024 * 1024}
-      />
-      
-      {/* Preview of newly selected file */}
-      {assessmentAnswers[fieldKey] && typeof assessmentAnswers[fieldKey] === 'object' && assessmentAnswers[fieldKey].base64 && (
-        <div>
-         
-          
-         
-          
-          {/* Preview for text-based files */}
-          {(assessmentAnswers[fieldKey].type.startsWith('text/') || 
-            assessmentAnswers[fieldKey].type.includes('json') ||
-            assessmentAnswers[fieldKey].type.includes('javascript') ||
-            assessmentAnswers[fieldKey].type.includes('python') ||
-            assessmentAnswers[fieldKey].name.endsWith('.txt') ||
-            assessmentAnswers[fieldKey].name.endsWith('.js') ||
-            assessmentAnswers[fieldKey].name.endsWith('.py') ||
-            assessmentAnswers[fieldKey].name.endsWith('.json')) && (
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#155724' }}>
-                Content Preview:
-              </div>
-              <pre style={{
-                background: 'white',
-                padding: '12px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                maxHeight: '150px',
-                overflow: 'auto',
-                border: '1px solid #28a745',
-                fontFamily: 'monospace'
-              }}>
-                {(() => {
-                  try {
-                    const base64Content = assessmentAnswers[fieldKey].base64;
-                    if (base64Content.includes('base64,')) {
-                      const content = atob(base64Content.split('base64,')[1]);
-                      return content.length > 500 ? content.substring(0, 500) + '...' : content;
-                    }
-                    return 'Preview not available';
-                  } catch (e) {
-                    return 'Preview not available';
-                  }
-                })()}
-              </pre>
-            </div>
-          )}
-          
-          {/* For other file types */}
-          {!assessmentAnswers[fieldKey].type.startsWith('image/') && 
-           !assessmentAnswers[fieldKey].type.startsWith('text/') &&
-           !assessmentAnswers[fieldKey].type.includes('json') &&
-           !assessmentAnswers[fieldKey].type.includes('javascript') &&
-           !assessmentAnswers[fieldKey].type.includes('python') &&
-           !assessmentAnswers[fieldKey].name.endsWith('.txt') &&
-           !assessmentAnswers[fieldKey].name.endsWith('.js') &&
-           !assessmentAnswers[fieldKey].name.endsWith('.py') &&
-           !assessmentAnswers[fieldKey].name.endsWith('.json') && (
-            <div style={{ 
-              background: 'white', 
-              padding: '15px', 
-              borderRadius: '4px',
-              textAlign: 'center',
-              color: '#155724',
-              fontWeight: 'bold',
-              border: '1px solid #28a745'
-            }}>
-              📄 File uploaded successfully - Preview not available for this file type
-            </div>
-          )}
-        </div>
-      )}
-      
-      {!studentAnswer && !replacingStates[fieldKey] && !assessmentAnswers[fieldKey] && (
-        <div style={{ color: '#666', fontStyle: 'italic', marginTop: '5px' }}>
-          No previous answer submitted
-        </div>
-      )}
-    </div>
-  )}
-</div>
-                              )
+                                          {/* Replace option */}
+                                          <button
+                                            className="btn btn-primary"
+                                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                                            onClick={() => {
+                                              setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
+                                              setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
+                                              handleAnswerChange(fieldKey, null);
+                                            }}
+                                          >
+                                            🔄 Replace
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {studentAnswer.type.startsWith('image/') && (
+                                        <img
+                                          src={studentAnswer.base64}
+                                          alt={studentAnswer.name}
+                                          style={{ maxWidth: '300px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
+                                        />
+                                      )}
+                                    </div>
+                                  ) : (
+                                    // Handle string type studentAnswer
+                                    <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
+                                      📎 {studentAnswer}
+                                      <button
+                                        className="btn btn-primary"
+                                        style={{ fontSize: '12px', padding: '2px 6px', marginLeft: '10px' }}
+                                        onClick={() => {
+                                          setOriginalAnswers(prev => ({ ...prev, [fieldKey]: studentAnswer }));
+                                          setReplacingStates(prev => ({ ...prev, [fieldKey]: true }));
+                                          handleAnswerChange(fieldKey, null);
+                                        }}
+                                      >
+                                        🔄 Replace
+                                      </button>
+                                    </div>
+                                  )
+                                ) : (
+                                  // Show file upload component when no answer OR when replacing
+                                  <div>
+                                    {replacingStates[fieldKey] && (
+                                      <div style={{ marginBottom: '10px' }}>
+                                        {/* Show original file info when replacing */}
+
+
+                                        <button
+                                          className="btn btn-secondary btn-sm"
+                                          onClick={() => {
+                                            setReplacingStates(prev => ({ ...prev, [fieldKey]: false }));
+                                            // Restore the original answer
+                                            handleAnswerChange(fieldKey, originalAnswers[fieldKey]);
+                                            setOriginalAnswers(prev => {
+                                              const newState = { ...prev };
+                                              delete newState[fieldKey];
+                                              return newState;
+                                            });
+                                          }}
+                                          style={{ marginBottom: '10px' }}
+                                        >
+                                          ← Cancel Replace
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* File Upload Component */}
+                                    <FileUploadWithBase64
+                                      onFileConverted={(fileData) => {
+                                        handleAnswerChange(fieldKey, fileData);
+                                        // Don't reset replacing state immediately - let user see the preview first
+                                      }}
+                                      currentValue={assessmentAnswers[fieldKey]}
+                                      maxSize={5 * 1024 * 1024}
+                                    />
+
+                                    {/* Preview of newly selected file */}
+                                    {assessmentAnswers[fieldKey] && typeof assessmentAnswers[fieldKey] === 'object' && assessmentAnswers[fieldKey].base64 && (
+                                      <div>
+
+
+
+
+                                        {/* Preview for text-based files */}
+                                        {(assessmentAnswers[fieldKey].type.startsWith('text/') ||
+                                          assessmentAnswers[fieldKey].type.includes('json') ||
+                                          assessmentAnswers[fieldKey].type.includes('javascript') ||
+                                          assessmentAnswers[fieldKey].type.includes('python') ||
+                                          assessmentAnswers[fieldKey].name.endsWith('.txt') ||
+                                          assessmentAnswers[fieldKey].name.endsWith('.js') ||
+                                          assessmentAnswers[fieldKey].name.endsWith('.py') ||
+                                          assessmentAnswers[fieldKey].name.endsWith('.json')) && (
+                                            <div>
+                                              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px', color: '#155724' }}>
+                                                Content Preview:
+                                              </div>
+                                              <pre style={{
+                                                background: 'white',
+                                                padding: '12px',
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                                maxHeight: '150px',
+                                                overflow: 'auto',
+                                                border: '1px solid #28a745',
+                                                fontFamily: 'monospace'
+                                              }}>
+                                                {(() => {
+                                                  try {
+                                                    const base64Content = assessmentAnswers[fieldKey].base64;
+                                                    if (base64Content.includes('base64,')) {
+                                                      const content = atob(base64Content.split('base64,')[1]);
+                                                      return content.length > 500 ? content.substring(0, 500) + '...' : content;
+                                                    }
+                                                    return 'Preview not available';
+                                                  } catch (e) {
+                                                    return 'Preview not available';
+                                                  }
+                                                })()}
+                                              </pre>
+                                            </div>
+                                          )}
+
+                                        {/* For other file types */}
+                                        {!assessmentAnswers[fieldKey].type.startsWith('image/') &&
+                                          !assessmentAnswers[fieldKey].type.startsWith('text/') &&
+                                          !assessmentAnswers[fieldKey].type.includes('json') &&
+                                          !assessmentAnswers[fieldKey].type.includes('javascript') &&
+                                          !assessmentAnswers[fieldKey].type.includes('python') &&
+                                          !assessmentAnswers[fieldKey].name.endsWith('.txt') &&
+                                          !assessmentAnswers[fieldKey].name.endsWith('.js') &&
+                                          !assessmentAnswers[fieldKey].name.endsWith('.py') &&
+                                          !assessmentAnswers[fieldKey].name.endsWith('.json') && (
+                                            <div style={{
+                                              background: 'white',
+                                              padding: '15px',
+                                              borderRadius: '4px',
+                                              textAlign: 'center',
+                                              color: '#155724',
+                                              fontWeight: 'bold',
+                                              border: '1px solid #28a745'
+                                            }}>
+                                              📄 File uploaded successfully - Preview not available for this file type
+                                            </div>
+                                          )}
+                                      </div>
+                                    )}
+
+                                    {!studentAnswer && !replacingStates[fieldKey] && !assessmentAnswers[fieldKey] && (
+                                      <div style={{ color: '#666', fontStyle: 'italic', marginTop: '5px' }}>
+                                        No previous answer submitted
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )
                           ) : (
                             // Allow file upload for active assessment
                             <FileUploadWithBase64
@@ -4565,49 +5030,49 @@ if (fieldKey in assessmentAnswers) {
   // Render Questions View Modal
   const renderQuestionsViewModal = () => {
     if (!showQuestionsViewModal || !selectedAssessmentForQuestions) return null;
- const startEditingQuestion = (question) => {
-        setEditingQuestionId(question.id);
-        setEditedQuestion({
-            text: question.text,
-            points: question.points,
-            types: question.types,
-            textLimit: question.textLimit || '',
-            instructions: question.instructions || ''
-        });
+    const startEditingQuestion = (question) => {
+      setEditingQuestionId(question.id);
+      setEditedQuestion({
+        text: question.text,
+        points: question.points,
+        types: question.types,
+        textLimit: question.textLimit || '',
+        instructions: question.instructions || ''
+      });
     };
 
     const cancelEditing = () => {
-        setEditingQuestionId(null);
-        setEditedQuestion({});
+      setEditingQuestionId(null);
+      setEditedQuestion({});
     };
 
     const saveEditedQuestion = async (assessmentId, questionId) => {
-        try {
-            // Call your update function here
-            await updateQuestion(assessmentId, questionId, editedQuestion);
-            setEditingQuestionId(null);
-            setEditedQuestion({});
-            // Optionally refresh the assessment data
-            // fetchAssessments();
-        } catch (error) {
-            console.error('Error updating question:', error);
-        }
+      try {
+        // Call your update function here
+        await updateQuestion(assessmentId, questionId, editedQuestion);
+        setEditingQuestionId(null);
+        setEditedQuestion({});
+        // Optionally refresh the assessment data
+        // fetchAssessments();
+      } catch (error) {
+        console.error('Error updating question:', error);
+      }
     };
 
     const handleEditChange = (field, value) => {
-        setEditedQuestion(prev => ({
-            ...prev,
-            [field]: value
-        }));
+      setEditedQuestion(prev => ({
+        ...prev,
+        [field]: value
+      }));
     };
 
     const handleTypesChange = (type) => {
-        setEditedQuestion(prev => ({
-            ...prev,
-            types: prev.types.includes(type) 
-                ? prev.types.filter(t => t !== type)
-                : [...prev.types, type]
-        }));
+      setEditedQuestion(prev => ({
+        ...prev,
+        types: prev.types.includes(type)
+          ? prev.types.filter(t => t !== type)
+          : [...prev.types, type]
+      }));
     };
 
     return (
@@ -4642,7 +5107,7 @@ if (fieldKey in assessmentAnswers) {
                 {question.textLimit && <p><strong>Text Minimum:</strong> {question.textLimit} characters</p>}
                 <p><strong>Question:</strong> {question.text}</p>
                 {question.instructions && <p><strong>Instructions:</strong> {question.instructions}</p>}
-               <div style={{ marginTop: '10px' }}>
+                <div style={{ marginTop: '10px' }}>
                   <button
                     className="btn btn-primary"
                     onClick={() => handleEditQuestion(selectedAssessmentForQuestions.firebaseId, question)}
@@ -4977,6 +5442,9 @@ if (fieldKey in assessmentAnswers) {
         {renderGradingModal()}
         {renderQuestionModal()}
         {renderQuestionsViewModal()}
+
+        {renderBatchCreationModal()}
+
       </div>
     </div>
   );
