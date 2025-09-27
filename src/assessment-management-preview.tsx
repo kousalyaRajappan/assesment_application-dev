@@ -673,111 +673,223 @@ Available points: ${maxScore - currentTotalPoints} points`);
     }
   }
 
-  const handleEditQuestion = (firebaseId, question) => {
-    // Example: Use prompts for quick editing (you can replace with a modal/form)
-    const newText = prompt("Edit question text:", question.text);
-    if (newText === null) return; // User cancelled
+const handleEditQuestion = (firebaseId, question) => {
+  // Create a more comprehensive edit interface
+  const editQuestionData = { ...question }; // Start with all existing data
+  
+  // Edit basic properties
+  const newText = prompt("Edit question text:", question.text);
+  if (newText === null) return; // User cancelled
+  editQuestionData.text = newText;
 
-    const newPoints = prompt("Edit points:", question.points);
-    if (newPoints === null) return; // User cancelled
+  const newPoints = prompt("Edit points:", question.points);
+  if (newPoints === null) return; // User cancelled
+  editQuestionData.points = parseInt(newPoints) || question.points;
 
-    const newInstructions = prompt("Edit instructions:", question.instructions || "");
+  const newInstructions = prompt("Edit instructions:", question.instructions || "");
+  if (newInstructions === null) return; // User cancelled
+  editQuestionData.instructions = newInstructions;
 
-    const updatedData = {
-      text: newText,
-      points: parseInt(newPoints) || question.points,
-      instructions: newInstructions,
-      // Keep other fields the same
-      types: question.types,
-      textLimit: question.textLimit,
-      id: question.id // Keep the same id
+  // Handle options if they exist
+  if (question.options && Array.isArray(question.options)) {
+    const editOptions = window.confirm("Do you want to edit the answer options?");
+    if (editOptions) {
+      const optionsText = question.options.join('\n');
+      const newOptionsText = prompt("Edit options (one per line):", optionsText);
+      if (newOptionsText !== null) {
+        // Split by newlines and filter out empty lines
+        editQuestionData.options = newOptionsText
+          .split('\n')
+          .map(option => option.trim())
+          .filter(option => option.length > 0);
+      }
+    }
+  }
+
+  // Handle types if they exist
+  if (question.types && Array.isArray(question.types)) {
+    const editTypes = window.confirm("Do you want to edit the answer types?");
+    if (editTypes) {
+      const typesText = question.types.join(', ');
+      const newTypesText = prompt("Edit answer types (comma separated):", typesText);
+      if (newTypesText !== null) {
+        // Split by comma and clean up
+        editQuestionData.types = newTypesText
+          .split(',')
+          .map(type => type.trim())
+          .filter(type => type.length > 0);
+      }
+    }
+  }
+
+  // Handle textLimit if it exists
+  if (question.textLimit) {
+    const newTextLimit = prompt("Edit text limit (leave empty for no limit):", question.textLimit);
+    if (newTextLimit !== null) {
+      editQuestionData.textLimit = newTextLimit ? parseInt(newTextLimit) : null;
+    }
+  }
+
+  // Call the enhanced editQuestion function with all the data
+  editQuestion(firebaseId, question.id, editQuestionData);
+};
+
+// ALTERNATIVE: More user-friendly edit function using a simple form
+const handleEditQuestionWithForm = (firebaseId, question) => {
+  // Create a temporary div for the form
+  const formDiv = document.createElement('div');
+  formDiv.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10000; max-width: 500px; width: 90%;
+  `;
+  
+  formDiv.innerHTML = `
+    <h3>Edit Question</h3>
+    <div style="margin: 10px 0;">
+      <label>Question Text:</label>
+      <textarea id="editText" style="width: 100%; padding: 8px; margin: 5px 0;" rows="3">${question.text}</textarea>
+    </div>
+    <div style="margin: 10px 0;">
+      <label>Points:</label>
+      <input type="number" id="editPoints" style="width: 100%; padding: 8px; margin: 5px 0;" value="${question.points}">
+    </div>
+    <div style="margin: 10px 0;">
+      <label>Instructions:</label>
+      <textarea id="editInstructions" style="width: 100%; padding: 8px; margin: 5px 0;" rows="2">${question.instructions || ''}</textarea>
+    </div>
+    ${question.options ? `
+    <div style="margin: 10px 0;">
+      <label>Options (one per line):</label>
+      <textarea id="editOptions" style="width: 100%; padding: 8px; margin: 5px 0;" rows="4">${question.options.join('\n')}</textarea>
+    </div>
+    ` : ''}
+    <div style="text-align: right; margin-top: 15px;">
+      <button id="cancelEdit" style="margin: 5px; padding: 8px 16px; border: 1px solid #ccc; background: white;">Cancel</button>
+      <button id="saveEdit" style="margin: 5px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 4px;">Save Changes</button>
+    </div>
+  `;
+  
+  document.body.appendChild(formDiv);
+  
+  // Handle save
+  document.getElementById('saveEdit').onclick = () => {
+    const editQuestionData = {
+      ...question,
+      text: document.getElementById('editText').value,
+      points: parseInt(document.getElementById('editPoints').value) || question.points,
+      instructions: document.getElementById('editInstructions').value
     };
-
-    editQuestion(firebaseId, question.id, updatedData);
+    
+    // Handle options if they exist
+    if (question.options && document.getElementById('editOptions')) {
+      const optionsText = document.getElementById('editOptions').value;
+      editQuestionData.options = optionsText
+        .split('\n')
+        .map(option => option.trim())
+        .filter(option => option.length > 0);
+    }
+    
+    document.body.removeChild(formDiv);
+    editQuestion(firebaseId, question.id, editQuestionData);
   };
+  
+  // Handle cancel
+  document.getElementById('cancelEdit').onclick = () => {
+    document.body.removeChild(formDiv);
+  };
+};
 
-  const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
-    console.log("Editing question", firebaseId, questionId, updatedQuestionData);
-    if (!firebaseId) {
-      alert("Error: Missing firebaseId");
+ const editQuestion = async (firebaseId, questionId, updatedQuestionData) => {
+  console.log("Editing question", firebaseId, questionId, updatedQuestionData);
+  if (!firebaseId) {
+    alert("Error: Missing firebaseId");
+    return;
+  }
+
+  try {
+    // Find assessment by firebaseId
+    const assessment = assessments.find((a) => a.firebaseId === firebaseId);
+    if (!assessment) {
+      alert("Assessment not found");
       return;
     }
 
-    try {
-      // ✅ Find assessment by firebaseId
-      const assessment = assessments.find((a) => a.firebaseId === firebaseId);
-      if (!assessment) {
-        alert("Assessment not found");
-        return;
-      }
+    // Calculate total points WITH the edit
+    const oldQuestion = (assessment.questions || []).find(q => q.id === questionId);
+    if (!oldQuestion) {
+      alert("Question not found");
+      return;
+    }
 
-      // ✅ Calculate total points WITH the edit
-      const oldQuestion = (assessment.questions || []).find(q => q.id === questionId);
-      if (!oldQuestion) {
-        alert("Question not found");
-        return;
-      }
+    const oldPoints = oldQuestion.points || 0;
+    const newPoints = updatedQuestionData.points || 0;
 
-      const oldPoints = oldQuestion.points || 0;
-      const newPoints = updatedQuestionData.points || 0;
+    // Calculate current total points
+    const currentTotalPoints = (assessment.questions || []).reduce(
+      (sum, q) => sum + (q.points || 0),
+      0
+    );
 
-      // Calculate current total points
-      const currentTotalPoints = (assessment.questions || []).reduce(
-        (sum, q) => sum + (q.points || 0),
-        0
-      );
+    // Calculate what the new total would be after the edit
+    const newTotalPoints = currentTotalPoints - oldPoints + newPoints;
+    const maxScore = assessment.maxScore || 0;
 
-      // Calculate what the new total would be after the edit
-      const newTotalPoints = currentTotalPoints - oldPoints + newPoints;
-      const maxScore = assessment.maxScore || 0;
+    // Check if the edit would exceed maxScore
+    if (newTotalPoints > maxScore) {
+      const pointChange = newPoints - oldPoints;
+      const availablePoints = maxScore - currentTotalPoints + oldPoints;
 
-      // ✅ Check if the edit would exceed maxScore
-      if (newTotalPoints > maxScore) {
-        const pointChange = newPoints - oldPoints;
-        const availablePoints = maxScore - currentTotalPoints + oldPoints;
-
-        alert(`Cannot update question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
-        
+      alert(`Cannot update question! Total points (${newTotalPoints}) would exceed maximum score (${maxScore}).
+      
 Current total: ${currentTotalPoints} points
 Old question points: ${oldPoints} points
 New question points: ${newPoints} points
 Point change: ${pointChange > 0 ? '+' : ''}${pointChange} points
 Available points for this question: ${availablePoints} points`);
-        return;
-      }
-
-      // ✅ Update question locally
-      const updatedQuestions = (assessment.questions || []).map((q) =>
-        q.id === questionId ? { ...q, ...updatedQuestionData } : q
-      );
-
-      // ✅ Update Firestore (always use firebaseId)
-      const assessmentRef = doc(db, "assessments", firebaseId);
-      await updateDoc(assessmentRef, {
-        questions: updatedQuestions,
-      });
-
-      // ✅ Update local state
-      setAssessments((prev) =>
-        prev.map((a) =>
-          a.firebaseId === firebaseId ? { ...a, questions: updatedQuestions } : a
-        )
-      );
-
-      // ✅ Update selectedAssessmentForQuestions if it's the same doc
-      if (selectedAssessmentForQuestions?.firebaseId === firebaseId) {
-        setSelectedAssessmentForQuestions((prev) => ({
-          ...prev!,
-          questions: updatedQuestions,
-        }));
-      }
-
-      alert("Question updated successfully!");
-    } catch (error) {
-      console.error("Error updating question:", error);
-      alert("Failed to update question. Please try again.");
+      return;
     }
-  };
+
+    // ENHANCED: Merge the updated data with existing question data
+    // This ensures all properties including options are properly updated
+    const updatedQuestion = {
+      ...oldQuestion, // Keep all existing properties
+      ...updatedQuestionData, // Override with new data
+      id: questionId // Ensure ID stays the same
+    };
+
+    // Update question locally
+    const updatedQuestions = (assessment.questions || []).map((q) =>
+      q.id === questionId ? updatedQuestion : q
+    );
+
+    // Update Firestore (always use firebaseId)
+    const assessmentRef = doc(db, "assessments", firebaseId);
+    await updateDoc(assessmentRef, {
+      questions: updatedQuestions,
+    });
+
+    // Update local state
+    setAssessments((prev) =>
+      prev.map((a) =>
+        a.firebaseId === firebaseId ? { ...a, questions: updatedQuestions } : a
+      )
+    );
+
+    // Update selectedAssessmentForQuestions if it's the same doc
+    if (selectedAssessmentForQuestions?.firebaseId === firebaseId) {
+      setSelectedAssessmentForQuestions((prev) => ({
+        ...prev,
+        questions: updatedQuestions,
+      }));
+    }
+
+    alert("Question updated successfully!");
+  } catch (error) {
+    console.error("Error updating question:", error);
+    alert("Failed to update question. Please try again.");
+  }
+};
   const activateAssessmentNow = async (assessmentId) => {
     console.log('firebase assessment id', assessmentId);
     // log all ids in state
@@ -5110,7 +5222,7 @@ const isAssignedToAll = isAssignedToAllBatches(assessment.assignedBatches, stude
                 <div style={{ marginTop: '10px' }}>
                   <button
                     className="btn btn-primary"
-                    onClick={() => handleEditQuestion(selectedAssessmentForQuestions.firebaseId, question)}
+                    onClick={() => handleEditQuestionWithForm(selectedAssessmentForQuestions.firebaseId, question)}
                     style={{ marginRight: '10px' }}
                   >
                     Edit Question
